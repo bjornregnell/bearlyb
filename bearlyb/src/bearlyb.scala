@@ -71,6 +71,7 @@ def loop(): Unit =
 var window: Option[Long] = None
 
 @main def main(): Unit =
+  mac.restartJVM()
   println(s"Hello LWJGL ${Version.getVersion()}!")
 
   init()
