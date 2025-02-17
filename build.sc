@@ -5,7 +5,9 @@ import mill.*, scalalib.*
 object bearlyb extends LwjglModule("3.3.6"):
   def scalaVersion = "3.6.3"
 
-  val deps = Agg.empty[Dep]
+  val deps = Agg(
+    ivy"com.lihaoyi::os-lib:0.11.4",
+  )
   val runDeps = Agg.empty[Dep] // runtime-only dependencies
 
   def ivyDeps = lwjglDeps ++ deps
@@ -19,8 +21,6 @@ end bearlyb
 
 object playground extends LwjglModule("3.3.6"):
   def scalaVersion = "3.6.3"
-
-
 
 trait LwjglModule(version: String) extends ScalaModule:
 
