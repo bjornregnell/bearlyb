@@ -23,7 +23,8 @@ def restartJVM(args: String*): Unit = boundary:
   // restart jvm with -XstartOnFirstThread
   println(Console.YELLOW_B + Console.BLACK + "Starting a new JVM with -XstartOnNewThread! Hello mac user :)" + Console.RESET)
   val classpath = sys.props("java.class.path")
-  val mainClass = sys.props("JAVA_MAIN_CLASS_" + mxBean.getPid())
+  println(classpath)
+  val mainClass = sys.props("sun.java.command")
   println(mainClass)
   val jvmPath = os.Path(sys.props("java.home"))/"bin"/"java"
   val jvmArgs = Seq(
