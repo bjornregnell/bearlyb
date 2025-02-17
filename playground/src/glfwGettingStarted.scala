@@ -4,7 +4,9 @@ import
   org.lwjgl.*,
   glfw.*,
   system.*,
+  opengl.*,
   GLFW.*,
+  GL11.*,
   MemoryStack.*,
   MemoryUtil.*
 import scala.util.Using
@@ -14,6 +16,7 @@ import scala.util.Using
 
 def panic(msg: String): Nothing =
   Console.err.println(s"!!! PANIC: $msg")
+  glfwTerminate()
   scala.sys.exit(-1)
 
 def errln(msg: String): Unit = Console.err.println
@@ -32,12 +35,12 @@ def init(): Window =
     glfwCreateWindow(640, 480, "Bearly a title", NULL, NULL) match
       case NULL => panic("Failed to create window")
       case handle => handle
+  end window
 
   glfwMakeContextCurrent(window)
-
-  Using(stackPush()): stack =>
-    val pWidth = stack.mallocInt(1)
-    val pHeight = stack.mallocInt(1)
+  glfwSwapInterval(1)
+  glfwShowWindow(window)
+  GL.createCapabilities()
 
   window
 end init
@@ -57,7 +60,21 @@ def gameloop(window: Window): Unit =
   )
 
   while !glfwWindowShouldClose(window) do
-    ()
+    Using(stackPush()): stack =>
+      val pWidth = stack.mallocInt(1)
+      val pHeight = stack.mallocInt(1)
+
+      glfwGetFramebufferSize(window, pWidth, pHeight)
+      val width = pWidth.get(0)
+      val height = pHeight.get(0)
+      val ratio = width / height.toFloat
+
+      glViewport(0, 0, pWidth.get(0), pHeight.get(0))
+      glClear(GL_COLOR_BUFFER_BIT)
+
+      glfwSwapBuffers(window)
+      glfwPollEvents()
+  end while
 end gameloop
 
 @main
