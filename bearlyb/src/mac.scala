@@ -21,9 +21,10 @@ def restartJVM(args: String*): Unit = boundary:
   if inputArgs.exists(_ == "-XstartOnFirstThread") then break()
 
   // restart jvm with -XstartOnFirstThread
-  println(Console.YELLOW_B + Console.BLACK + "Starting a new JVM with -XstartOnNewThread! Hello mac user :)")
+  println(Console.YELLOW_B + Console.BLACK + "Starting a new JVM with -XstartOnNewThread! Hello mac user :)" + Console.RESET)
   val classpath = sys.props("java.class.path")
   val mainClass = sys.props("JAVA_MAIN_CLASS_" + mxBean.getPid())
+  println(mainClass)
   val jvmPath = os.Path(sys.props("java.home"))/"bin"/"java"
   val jvmArgs = Seq(
     "-XstartOnFirstThread",
@@ -33,6 +34,5 @@ def restartJVM(args: String*): Unit = boundary:
     mainClass
   ) ++ args
 
-  val subprocess = os.proc(jvmPath, jvmArgs).spawn(stderr = os.Pipe)
-  sys.exit(if subprocess.waitFor() then 0 else -1)
+  os.proc(jvmPath, jvmArgs).call(stderr = os.Pipe)
 end restartJVM
