@@ -52,7 +52,14 @@ trait LwjglModule(version: String) extends ScalaModule:
     yield
       lwjglDep(dep, Some(native))
 
+  def forkArgs =
+    if isMacOS then Seq("-XstartOnFirstThread") else Seq.empty
+    
   def ivyDeps = lwjglDeps
   def runIvyDeps = runLwjglDeps
 
 end LwjglModule
+
+lazy val isMacOS =
+  val osName = sys.props("os.name")
+  osName.startsWith("Mac OS X") || osName.startsWith("Darwin")
