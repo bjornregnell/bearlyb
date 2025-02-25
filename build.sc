@@ -21,6 +21,7 @@ end bearlyb
 
 object playground extends LwjglModule("3.3.6"):
   def scalaVersion = "3.6.3"
+  def ivyDeps = Agg(ivy"com.lihaoyi::os-lib:0.11.4") ++ lwjglDeps
 
 trait LwjglModule(version: String) extends ScalaModule:
 
