@@ -23,28 +23,50 @@ val vertexShader = os.read(os.resource/"shader.vert")
 val fragmentShader = os.read(os.resource/"shader.frag")
 
 def panic(msg: String): Nothing =
-  Console.err.println(s"!!! PANIC: $msg")
+  errln(s"!!! PANIC: $msg")
   glfwTerminate()
   scala.sys.exit(1)
 
-def errln(msg: String): Unit = Console.err.println
+def errln(msg: String): Unit =
+  Console.err.println(Console.RED + msg + Console.RESET)
 
 type Window = Long
 
 @main
 def main(): Unit =
+  glfwSetErrorCallback((error, description) =>
+    errln(s"GLFW ERROR: code $error msg: $description.")
+  )
+
   // Start OpenGL context and os window using glfw
   if !glfwInit() then panic("Could not start GLFW3")
 
   // Request an OpenGL 4.1, core, context from GLFW
   glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4)
   glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1)
-  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, True)
+  glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE)
   glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE)
-  
+  glfwWindowHint(GLFW_SAMPLES, 16)
+
   // Create a window on the operating system,
   // then tie the OpenGL context to it.
-  val window: Window = glfwCreateWindow(800, 600, "Hello Triangle", NULL, NULL) match
+  var (winWidth, winHeight) = (800, 600)
+  var mon = NULL
+  val fullscreen = false
+  if fullscreen then
+    mon = glfwGetPrimaryMonitor()
+    val mode = glfwGetVideoMode(mon)
+
+    glfwWindowHint(GLFW_RED_BITS, mode.redBits())
+    glfwWindowHint(GLFW_GREEN_BITS, mode.greenBits())
+    glfwWindowHint(GLFW_BLUE_BITS, mode.blueBits())
+    glfwWindowHint(GLFW_REFRESH_RATE, mode.refreshRate())
+
+    winWidth = mode.width()
+    winHeight = mode.height()
+  end if
+
+  val window: Window = glfwCreateWindow(winWidth, winHeight, "Hello Triangle", mon, NULL) match
     case NULL => panic("Could not open window with GLFW")
     case handle => handle
 
@@ -93,23 +115,44 @@ def main(): Unit =
     // Create some shaders which we WILL need for rendering.
     // The bare minimum is a vertex shader which runs once
     // for every vertex in our mesh.
-    val vs = glCreateShader(GL_VERTEX_SHADER)
-    glShaderSource(vs, vertexShader)
-    glCompileShader(vs)
-    val fs = glCreateShader(GL_FRAGMENT_SHADER)
-    glShaderSource(fs, fragmentShader)
-    glCompileShader(fs)
+    val vs = createShader(vertexShader, GL_VERTEX_SHADER)
+    val fs = createShader(fragmentShader, GL_FRAGMENT_SHADER)
 
-    val shaderProgram = glCreateProgram()
-    glAttachShader(shaderProgram, fs)
-    glAttachShader(shaderProgram, vs)
-    glLinkProgram(shaderProgram)
+    val shaderProgram = createProgram(vs, fs)
 
+    val winW = stack.ints(winWidth)
+    val winH = stack.ints(winHeight)
+
+    var titleCountdown = 0.1d
+    var prev = glfwGetTime()
     while !glfwWindowShouldClose(window) do
+      // calculate the fps
+      val now = glfwGetTime() // get the current time
+      val elapsed = now - prev
+      prev = now
+
       // update window events
       glfwPollEvents()
 
+      titleCountdown -= elapsed
+      if titleCountdown <= 0 && elapsed > 0 then
+        val fps = 1.0d / elapsed
+        print(f"\rFPS: $fps%2.2f")
+        titleCountdown = 0.1d
+      end if
+
+      if GLFW_PRESS == glfwGetKey(window, GLFW_KEY_ESCAPE) then
+        glfwSetWindowShouldClose(window, true)
+      end if
+
+      // Check if the window resized
+      glfwGetWindowSize(window, winW, winH)
+      // Update the viewport (drawing area) to fill the
+      // window dimensions.
+      glViewport(0, 0, winW.get(0), winH.get(0))
+
       // wipe the drawing surface clear
+      glClearColor(0.6, 0.6, 0.8, 1.0)
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
       // put the shader program, and the vao,
@@ -130,3 +173,42 @@ def main(): Unit =
   glfwTerminate();
 
 end main
+
+def createShader(shader: String, kind: Int): Int =
+  val s = glCreateShader(kind)
+  glShaderSource(s, shader)
+  glCompileShader(s)
+  
+  Using(stackPush()): stack =>
+    val params = stack.ints(-1)
+    glGetShaderiv(s, GL_COMPILE_STATUS, params)
+
+    if GL_TRUE != params.get(0) then
+      val msg = glGetShaderInfoLog(s)
+      errln(s"ERROR: Shader index $s did not compile.\n$msg")
+
+  s
+
+end createShader
+
+def createProgram(shaders: Int*): Int =
+  createProgram(true, shaders*)
+def createProgram(deleteShaders: Boolean = true, shaders: Int*): Int =
+  val program = glCreateProgram()
+  for shader <- shaders do
+    glAttachShader(program, shader)
+  glLinkProgram(program)
+  
+  Using(stackPush()): stack =>
+    val params = stack.ints(-1)
+    glGetProgramiv(program, GL_LINK_STATUS, params)
+
+    if GL_TRUE != params.get(0) then
+      val msg = glGetProgramInfoLog(program)
+      errln(s"ERROR: Could not link shader program GL index $program.\n$msg")
+
+  if deleteShaders then
+    shaders foreach glDeleteShader
+
+  program
+end createProgram

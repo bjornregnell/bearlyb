@@ -1,6 +1,7 @@
 package build
 
 import mill.*, scalalib.*
+import mill.scalalib.api.CompilationResult
 
 object bearlyb extends LwjglModule("3.3.6"):
   def scalaVersion = "3.6.3"
@@ -22,6 +23,16 @@ end bearlyb
 object playground extends LwjglModule("3.3.6"):
   def scalaVersion = "3.6.3"
   def ivyDeps = Agg(ivy"com.lihaoyi::os-lib:0.11.4") ++ lwjglDeps
+
+  override def compile = Task:
+    val res = resources().map(_.path)
+    val shaderFiles =
+      res.flatMap(os.walk(_))
+        .filter(p => shaderEndings(p.last.split('.').last))
+    for shader <- shaderFiles do
+      os.call(("glslang", shader))
+    super.compile
+  end compile
 
 trait LwjglModule(version: String) extends ScalaModule:
 
@@ -64,3 +75,9 @@ end LwjglModule
 lazy val isMacOS =
   val osName = sys.props("os.name")
   osName.startsWith("Mac OS X") || osName.startsWith("Darwin")
+
+val shaderEndings = Set(
+  "conf", "vert", "tesc", "tese", "geom", "frag",
+  "comp", "mesh", "task", "rgen", "rint", "rahit",
+  "rchit", "rmiss", "rcall", "glsl", "hlsl"
+)
