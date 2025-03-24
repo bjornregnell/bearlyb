@@ -24,15 +24,15 @@ object playground extends LwjglModule("3.3.6"):
   def scalaVersion = "3.6.3"
   def ivyDeps = Agg(ivy"com.lihaoyi::os-lib:0.11.4") ++ lwjglDeps
 
-  override def compile = Task:
-    val res = resources().map(_.path)
-    val shaderFiles =
-      res.flatMap(os.walk(_))
-        .filter(p => shaderEndings(p.last.split('.').last))
-    for shader <- shaderFiles do
-      os.call(("glslang", shader))
-    super.compile
-  end compile
+  // override def compile = Task:
+  //   val res = resources().map(_.path)
+  //   val shaderFiles =
+  //     res.flatMap(os.walk(_))
+  //       .filter(p => shaderEndings(p.last.split('.').last))
+  //   for shader <- shaderFiles do
+  //     os.call(("glslang", shader))
+  //   super.compile
+  // end compile
 
 trait LwjglModule(version: String) extends ScalaModule:
 
