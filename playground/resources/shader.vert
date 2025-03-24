@@ -1,7 +1,12 @@
 #version 410 core
 
 in vec3 vp;
+uniform float time;
 
 void main() {
-    gl_Position = vec4(vp, 1.0);
+    vec3 pos = vp;
+    pos.y += sin(time);
+    pos.x += cos(time);
+
+    gl_Position = vec4(pos, 1.0);
 }

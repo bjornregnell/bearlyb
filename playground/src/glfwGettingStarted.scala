@@ -30,8 +30,6 @@ def panic(msg: String): Nothing =
 def errln(msg: String): Unit =
   Console.err.println(Console.RED + msg + Console.RESET)
 
-type Window = Long
-
 @main
 def main(): Unit =
   glfwSetErrorCallback((error, description) =>
@@ -66,7 +64,7 @@ def main(): Unit =
     winHeight = mode.height()
   end if
 
-  val window: Window = glfwCreateWindow(winWidth, winHeight, "Hello Triangle", mon, NULL) match
+  val window: Long = glfwCreateWindow(winWidth, winHeight, "Hello Triangle", mon, NULL) match
     case NULL => panic("Could not open window with GLFW")
     case handle => handle
 
@@ -145,6 +143,9 @@ def main(): Unit =
         glfwSetWindowShouldClose(window, true)
       end if
 
+      val timeLoc = glGetUniformLocation(shaderProgram, "time")
+      assert(timeLoc > -1)
+
       // Check if the window resized
       glfwGetWindowSize(window, winW, winH)
       // Update the viewport (drawing area) to fill the
@@ -158,6 +159,7 @@ def main(): Unit =
       // put the shader program, and the vao,
       // in focus in opengl's state machine.
       glUseProgram(shaderProgram)
+      glUniform1f(timeLoc, now.toFloat)
       glBindVertexArray(vao.get(0))
       
       // draw points 0-3 from the currently bound vao
