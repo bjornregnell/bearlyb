@@ -143,9 +143,6 @@ def main(): Unit =
         glfwSetWindowShouldClose(window, true)
       end if
 
-      val timeLoc = glGetUniformLocation(shaderProgram, "time")
-      assert(timeLoc > -1)
-
       // Check if the window resized
       glfwGetWindowSize(window, winW, winH)
       // Update the viewport (drawing area) to fill the
@@ -156,6 +153,9 @@ def main(): Unit =
       glClearColor(0.6, 0.6, 0.8, 1.0)
       glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
 
+      val timeLoc = glGetUniformLocation(shaderProgram, "time")
+      assert(timeLoc > -1)
+
       // put the shader program, and the vao,
       // in focus in opengl's state machine.
       glUseProgram(shaderProgram)
@@ -164,6 +164,10 @@ def main(): Unit =
       
       // draw points 0-3 from the currently bound vao
       // with current in-use shader.
+      // There are more ways to draw these points than
+      // as "triangles". There is also POINTS, LINES,
+      // LINE_STRIP, LINE_LOOP, TRIANGLE_STRIP,
+      // and TRIANGLE_FAN
       glDrawArrays(GL_TRIANGLES, 0, 3)
 
       // put the stuff we've been drawing onto the

@@ -2,11 +2,12 @@
 
 in vec3 vp;
 uniform float time;
+out vec3 pos;
 
 void main() {
-    vec3 pos = vp;
-    pos.y += sin(time);
-    pos.x += cos(time);
+    pos = vp;
+    pos.y += sin(time) / 2;
+    pos.x += cos(time) / 2;
 
     gl_Position = vec4(pos, 1.0);
 }
