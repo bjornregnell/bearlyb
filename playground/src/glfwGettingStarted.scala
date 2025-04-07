@@ -11,6 +11,7 @@ import
   MemoryStack.*,
   MemoryUtil.*
 import scala.util.Using
+import scala.util.NotGiven
 
 
 
@@ -78,16 +79,13 @@ def main(): Unit =
 
   /* OTHER STUFF GOES HERE */
   Using(stackPush())(stack =>
-    val points = stack.floats(
-       0.0,  0.5, 0.0,
-       0.5, -0.5, 0.0,
-      -0.5, -0.5, 0.0
-    )
     // this will hold the pointer to the buffer in the GPU memory
-    val vbo = stack.mallocInt(1)
-    glGenBuffers(vbo) // generate empty buffer
-    glBindBuffer(GL_ARRAY_BUFFER, vbo.get(0))
-    glBufferData(GL_ARRAY_BUFFER, points, GL_STATIC_DRAW) // puts stuff into the buffer
+    val vbo = createVbo(
+      -0.5,  0.5, 0,
+      -0.5, -0.5, 0,
+       0.5,  0.5, 0,
+       0.5, -0.5, 0,
+    )
 
     // now we want to setup a Vertex Array Object (vao)
     // "WTF IS A VAO????"
@@ -107,7 +105,7 @@ def main(): Unit =
     glGenVertexArrays(vao)
     glBindVertexArray(vao.get(0))
     glEnableVertexAttribArray(0)
-    glBindBuffer(GL_ARRAY_BUFFER, vbo.get(0))
+    glBindBuffer(GL_ARRAY_BUFFER, vbo)
     glVertexAttribPointer(0, 3, GL_FLOAT, false, 0, NULL)
 
     // Create some shaders which we WILL need for rendering.
@@ -168,7 +166,8 @@ def main(): Unit =
       // as "triangles". There is also POINTS, LINES,
       // LINE_STRIP, LINE_LOOP, TRIANGLE_STRIP,
       // and TRIANGLE_FAN
-      glDrawArrays(GL_TRIANGLES, 0, 3)
+      // glDrawArrays(GL_TRIANGLES, 0, 3)
+      glDrawArrays(GL_TRIANGLE_STRIP, 0, 4)
 
       // put the stuff we've been drawing onto the
       // visible area
@@ -218,3 +217,41 @@ def createProgram(deleteShaders: Boolean = true, shaders: Int*): Int =
 
   program
 end createProgram
+
+def createVbo(data: Float*): Int =
+  Using(stackPush()): stack =>
+    val vbo = stack.mallocInt(1)
+    glGenBuffers(vbo) // generate empty buffer
+    glBindBuffer(GL_ARRAY_BUFFER, vbo.get(0))
+    glBufferData(GL_ARRAY_BUFFER, stack.floats(data*), GL_STATIC_DRAW) // puts stuff into the buffer
+
+    vbo.get(0)
+  .get
+end createVbo
+
+def createVao(vbos: Int*): Int =
+  Using(stackPush()): stack => 
+    // now we want to setup a Vertex Array Object (vao)
+    // "WTF IS A VAO????"
+    // Well, well, well. When we want to draw a 3D object we
+    // apparently have to bind and define the memory layout
+    // of every buffer belonging to a object every time we
+    // want to render it. In addition to the vertex buffer
+    // we might also want buffers with texture coordinates,
+    // vertex normals, and more! This becomes a lot of binding
+    // and memory-layouting. Not very nice >:(
+    // In comes our savior, the VAO! :D
+    // It stores all of the buffers that belong to a 3D mesh,
+    // so instead of binding every single buffer ONE BY ONE, 
+    // we can just bind the VAO and instantly render the mesh
+    // with no hassle! Very nice indeed! :)
+    val vao = stack.mallocInt(1)
+    glGenVertexArrays(vao)
+    glBindVertexArray(vao.get(0))
+    for (vbo, i) <- vbos.zipWithIndex do
+      glBindBuffer(GL_ARRAY_BUFFER, vbo)
+      glVertexAttribPointer(i, 3, GL_FLOAT, false, 0, NULL)
+      glEnableVertexAttribArray(i)
+
+    vao.get(0)
+  .get
