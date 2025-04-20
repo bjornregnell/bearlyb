@@ -1,7 +1,8 @@
 package build
 
 import mill.*, scalalib.*
-import mill.scalalib.api.CompilationResult
+import scalalib.api.CompilationResult
+import coursier.MavenRepository
 
 object bearlyb extends LwjglModule("3.3.6"):
   def scalaVersion = "3.6.3"
@@ -9,11 +10,10 @@ object bearlyb extends LwjglModule("3.3.6"):
   val deps = Agg(
     ivy"com.lihaoyi::os-lib:0.11.4",
   )
-  val runDeps = Agg.empty[Dep] // runtime-only dependencies
 
-  def ivyDeps = lwjglDeps ++ deps
+  def ivyDeps = super.ivyDeps() ++ deps
 
-  def runIvyDeps = runLwjglDeps ++ runDeps
+  def runIvyDeps = super.runIvyDeps()
 
   object test extends ScalaTests with TestModule.Munit:
     def ivyDeps = Agg(ivy"org.scalameta::munit:1.0.4")
@@ -23,16 +23,6 @@ end bearlyb
 object playground extends LwjglModule("3.3.6"):
   def scalaVersion = "3.6.3"
   def ivyDeps = Agg(ivy"com.lihaoyi::os-lib:0.11.4") ++ lwjglDeps
-
-  // override def compile = Task:
-  //   val res = resources().map(_.path)
-  //   val shaderFiles =
-  //     res.flatMap(os.walk(_))
-  //       .filter(p => shaderEndings(p.last.split('.').last))
-  //   for shader <- shaderFiles do
-  //     os.call(("glslang", shader))
-  //   super.compile
-  // end compile
 
 trait LwjglModule(version: String) extends ScalaModule:
 
@@ -69,15 +59,12 @@ trait LwjglModule(version: String) extends ScalaModule:
     
   def ivyDeps = lwjglDeps
   def runIvyDeps = runLwjglDeps
+  def repositoriesTask = Task.Anon:
+    super.repositoriesTask()
+      :+ MavenRepository("https://oss.sonatype.org/content/repositories/snapshots/")
 
 end LwjglModule
 
 lazy val isMacOS =
   val osName = sys.props("os.name")
   osName.startsWith("Mac OS X") || osName.startsWith("Darwin")
-
-val shaderEndings = Set(
-  "conf", "vert", "tesc", "tese", "geom", "frag",
-  "comp", "mesh", "task", "rgen", "rint", "rahit",
-  "rchit", "rmiss", "rcall", "glsl", "hlsl"
-)
