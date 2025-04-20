@@ -152,8 +152,8 @@ def main(): Unit =
 
   // Try to call some OpenGL functions,
   // and print some more version info.
-  println(s"Renderer: ${glGetString(GL_RENDERER)}}")
-  println(s"OpenGL version supported.\n${glGetString(GL_VERSION)}")
+  errln(s"Renderer: ${glGetString(GL_RENDERER)}}")
+  errln(s"OpenGL version supported.\n${glGetString(GL_VERSION)}")
 
   /* OTHER STUFF GOES HERE */
   Using(stackPush())(stack =>
