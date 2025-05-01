@@ -1,14 +1,16 @@
 package build
 
-import mill.*, scalalib.*
+import mill.*, scalalib.*, scalafmt.*
 import scalalib.api.CompilationResult
 import coursier.MavenRepository
 
-object bearlyb extends LwjglModule("3.3.6"):
-  def scalaVersion = "3.6.3"
+object bearlyb extends LwjglModule("3.4.0-SNAPSHOT"):
+  def scalaVersion = "3.6.4"
 
   val deps = Agg(
     ivy"com.lihaoyi::os-lib:0.11.4",
+    ivy"com.softwaremill.ox::core:0.5.13",
+    ivy"io.github.iltotore::iron:3.0.0",
   )
 
   def ivyDeps = super.ivyDeps() ++ deps
@@ -20,26 +22,33 @@ object bearlyb extends LwjglModule("3.3.6"):
 
 end bearlyb
 
-object playground extends LwjglModule("3.3.6"):
-  def scalaVersion = "3.6.3"
+object playground extends LwjglModule("3.4.0-SNAPSHOT"):
+  def scalaVersion = "3.6.4"
   def ivyDeps = Agg(ivy"com.lihaoyi::os-lib:0.11.4") ++ lwjglDeps
+  def moduleDeps = Seq(bearlyb)
 
 trait LwjglModule(version: String) extends ScalaModule:
 
   val lwjglLibs = Agg("lwjgl") ++ Agg(
-    "assimp", "glfw", "openal", "opengl", "stb",
+    "sdl"
   ).map("lwjgl-" + _)
 
   val lwjglNatives = Agg(
-    "linux",         "linux-arm64", "linux-ppc64le",
-    "linux-riscv64", "macos-arm64", "macos",
-    "windows-arm64", "windows",     "freebsd",
+    "linux",
+    "linux-arm64",
+    "linux-ppc64le",
+    "linux-riscv64",
+    "macos-arm64",
+    "macos",
+    "windows-arm64",
+    "windows",
+    "freebsd"
   )
 
   def lwjglDep(lib: String, native: Option[String]): Dep =
     val clf = native match
-      case Some(native) => s";classifier=natives-$native" 
-      case None => ""
+      case Some(native) => s";classifier=natives-$native"
+      case None         => ""
 
     ivy"org.lwjgl:$lib:$version$clf"
 
@@ -51,17 +60,18 @@ trait LwjglModule(version: String) extends ScalaModule:
     for
       dep <- lwjglLibs
       native <- lwjglNatives
-    yield
-      lwjglDep(dep, Some(native))
+    yield lwjglDep(dep, Some(native))
 
   def forkArgs =
     if isMacOS then Seq("-XstartOnFirstThread") else Seq.empty
-    
+
   def ivyDeps = lwjglDeps
   def runIvyDeps = runLwjglDeps
   def repositoriesTask = Task.Anon:
     super.repositoriesTask()
-      :+ MavenRepository("https://oss.sonatype.org/content/repositories/snapshots/")
+      :+ MavenRepository(
+        "https://oss.sonatype.org/content/repositories/snapshots/"
+      )
 
 end LwjglModule
 
