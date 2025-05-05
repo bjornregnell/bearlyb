@@ -10,7 +10,7 @@ object bearlyb extends LwjglModule("3.4.0-SNAPSHOT"):
   val deps = Agg(
     ivy"com.lihaoyi::os-lib:0.11.4",
     ivy"com.softwaremill.ox::core:0.5.13",
-    ivy"io.github.iltotore::iron:3.0.0",
+    ivy"io.github.iltotore::iron:3.0.1",
   )
 
   def ivyDeps = super.ivyDeps() ++ deps
