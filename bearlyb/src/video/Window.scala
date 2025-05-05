@@ -6,7 +6,8 @@ import
   system.MemoryStack.stackPush
 import scala.util.Using
 import bearlyb.*
-import renderer.Renderer
+import render.Renderer
+import render.Renderer
 
 final class Window private (private[bearlyb] val pWindow: Long):
   def title: String =

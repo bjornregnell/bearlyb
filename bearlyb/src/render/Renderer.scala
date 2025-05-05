@@ -1,4 +1,4 @@
-package bearlyb.renderer
+package bearlyb.render
 
 import org.lwjgl.sdl.SDLRender.*
 import bearlyb.*

@@ -6,6 +6,6 @@ export initialize.{
 export video.{
   Window, SystemTheme, systemTheme
 }
-export renderer.{
+export render.{
   Renderer
 }
