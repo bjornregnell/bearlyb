@@ -30,7 +30,7 @@ final class Window private (private[bearlyb] val pWindow: Long):
   def popup(xOffset: Int, yOffset: Int, width: Int, height: Int, flags: Window.Flags*): Window =
     new Window(
       SDL_CreatePopupWindow(pWindow, xOffset, yOffset, width, height, flags.combine)
-        .sdlErrorCheck()
+        .sdlCreationCheck()
     )
 
   def renderer: Renderer =
@@ -42,7 +42,7 @@ final class Window private (private[bearlyb] val pWindow: Long):
 object Window:
   def apply(title: String, width: Int, height: Int, flags: Flags*): Window =
     new Window(
-      SDL_CreateWindow(title, width, height, flags.combine).sdlErrorCheck()
+      SDL_CreateWindow(title, width, height, flags.combine).sdlCreationCheck()
     )
 
   enum Flags(private[bearlyb] val internal: Long):
