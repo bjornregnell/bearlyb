@@ -11,5 +11,9 @@ extension (notError: Boolean)
     if notError then value else sdlError()
 
 extension (ptr: Long)
-  private[bearlyb] def sdlErrorCheck(): Long =
+  private[bearlyb] def sdlCreationCheck(): Long =
     if ptr != NullPtr then ptr else sdlError()
+
+extension [T](obj: T)
+  private[bearlyb] def sdlCreationCheck(): T =
+    if obj != null then obj else sdlError()

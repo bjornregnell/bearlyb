@@ -10,5 +10,5 @@ object Renderer:
   def apply(window: Window): Renderer =
     new Renderer(
       SDL_CreateRenderer(window.pWindow, null.asInstanceOf[String])
-        .sdlErrorCheck()
+        .sdlCreationCheck()
     )
