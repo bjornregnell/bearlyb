@@ -19,4 +19,4 @@ enum Flags(private[bearlyb] val internal: Int):
 object Flags:
   extension (flags: IterableOnce[Flags])
     private[bearlyb] def combine: Int =
-      flags.foldLeft(0)(_ | _.internal)
+      flags.iterator.foldLeft(0)(_ | _.internal)

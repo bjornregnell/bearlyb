@@ -17,6 +17,8 @@ object bearlyb extends LwjglModule("3.4.0-SNAPSHOT"):
 
   def runIvyDeps = super.runIvyDeps()
 
+  def scalacOptions = Seq("-deprecation")
+
   object test extends ScalaTests with TestModule.Munit:
     def ivyDeps = Agg(ivy"org.scalameta::munit:1.0.4")
 

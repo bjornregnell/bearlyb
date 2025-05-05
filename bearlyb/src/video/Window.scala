@@ -100,6 +100,6 @@ object Window:
   object Flags:
     extension (flags: IterableOnce[Flags])
       private[bearlyb] def combine: Long =
-        flags.foldLeft(0L)(_ | _.internal)
+        flags.iterator.foldLeft(0L)(_ | _.internal)
   end Flags
 end Window
