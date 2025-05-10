@@ -42,6 +42,8 @@ object Rect:
 
       def rectIntersection(other: Rect[T]): Option[Rect[T]]
 
+      def contains(point: Point[T]): Boolean
+
       def union(other: Rect[T]): Option[Rect[T]] 
   end RectOps
 
@@ -104,7 +106,12 @@ object Rect:
           else None
         .get
 
-
+      def contains(point: Point[Int]): Boolean =
+        Using(stackPush()): stack =>
+          val p: SDL_Point = SDL_Point.malloc(stack)
+          p.x(point.x).y(point.y)
+          SDL_PointInRect(p, rect.internal(stack))
+        .get
       
 
       def isEmpty: Boolean = 
@@ -168,6 +175,13 @@ object Rect:
           if SDL_GetRectUnionFloat(rect.internal(stack), o, result)
           then Some(Rect.fromInternal(result))
           else None
+        .get
+
+      def contains(point: Point[Float]): Boolean =
+        Using(stackPush()): stack =>
+          val p: SDL_FPoint = SDL_FPoint.malloc(stack)
+          p.x(point.x).y(point.y)
+          SDL_PointInRectFloat(p, rect.internal(stack))
         .get
 
       def isEmpty: Boolean = 
