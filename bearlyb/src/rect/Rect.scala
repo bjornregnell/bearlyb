@@ -5,7 +5,10 @@ import SDLRect.*
 import org.lwjgl.system.MemoryStack, MemoryStack.*
 import scala.util.Using
 
-case class Rect[T](x: T, y: T, w: T, h: T)
+case class Rect[T: Rect.RectOps](x: T, y: T, w: T, h: T):
+  override def equals(that: Any): Boolean = 
+    Rect.eq[T](this, that)
+end Rect
 
 object Rect:
 
@@ -15,16 +18,21 @@ object Rect:
   private[bearlyb] def fromInternal(rect: SDL_FRect): Rect[Float] =
     Rect(rect.x(), rect.y(), rect.w(), rect.h())
 
-  def empty[T: Numeric as num] = 
+  def empty[T: RectOps: Numeric as num ] = 
     new Rect(num.zero, num.zero, num.zero, num.zero)
 
   def enclose[T: RectOps as rectOps](ps: Seq[Point[T]], clip: Rect[T] | Null = null): Rect[T] = 
     rectOps.enclose(ps, clip)
 
+  private[bearlyb] def eq[T: RectOps as rectOps](rect: Rect[T], other: Any ): Boolean =
+    rectOps.eq(rect, other)
+
   trait RectOps[T]:
     type Internal
 
     def enclose(ps: Seq[Point[T]], clip: Rect[T] | Null = null): Rect[T]
+
+    private[bearlyb] def eq(rect: Rect[T], other: Any ): Boolean
 
     extension (rect: Rect[T])  
       private[bearlyb] def internal(stack: MemoryStack): Internal
@@ -45,6 +53,7 @@ object Rect:
       def contains(point: Point[T]): Boolean
 
       def union(other: Rect[T]): Option[Rect[T]] 
+
   end RectOps
 
   given RectOps[Int]:
@@ -65,6 +74,26 @@ object Rect:
         Rect.fromInternal(r)
       .get
     end enclose
+
+    def eq(rect: Rect[Int], that: Any): Boolean = 
+      that match
+        case otherRect: Rect[_] =>
+          otherRect match
+            case r if r.x.isInstanceOf[Int] =>
+              Using(stackPush()) { stack =>
+                val o = r.asInstanceOf[Rect[Int]].internal(stack)
+                SDL_RectsEqual(o, rect.internal(stack))
+              }.get
+            case r if r.x.isInstanceOf[Float] =>
+              Using(stackPush()) { stack =>
+                val o = r.asInstanceOf[Rect[Float]].internal(stack)
+                SDL_RectsEqualFloat(o, rect.toFloatRect.internal(stack))
+              }.get
+            case _ => false
+        case _ => false
+    end eq
+
+
 
     extension (rect: Rect[Int]) 
       def internal(stack: MemoryStack): Internal = 
@@ -113,6 +142,8 @@ object Rect:
           SDL_PointInRect(p, rect.internal(stack))
         .get
       
+      def toFloatRect: Rect[Float] = 
+        new Rect[Float](rect.x.toFloat, rect.y.toFloat, rect.w.toFloat, rect.h.toFloat)
 
       def isEmpty: Boolean = 
         rect.h <= 0 || rect.w <= 0 // Manual implementation here in order to be consistent with the float implementation which is manual due to a bug in the library
@@ -137,6 +168,25 @@ object Rect:
         Rect.fromInternal(r)
       .get
     end enclose
+
+
+    def eq(rect: Rect[Float], that: Any): Boolean = 
+      that match
+        case otherRect: Rect[_] =>
+          otherRect match
+            case r if r.x.isInstanceOf[Int] =>
+              Using(stackPush()) { stack =>
+                val o = r.asInstanceOf[Rect[Int]].toFloatRect.internal(stack)
+                SDL_RectsEqualFloat(o, rect.internal(stack))
+              }.get
+            case r if r.x.isInstanceOf[Float] =>
+              Using(stackPush()) { stack =>
+                val o = r.asInstanceOf[Rect[Float]].internal(stack)
+                SDL_RectsEqualFloat(o, rect.internal(stack))
+              }.get
+            case _ => false
+        case _ => false
+    end eq
 
     extension (rect: Rect[Float]) 
       def internal(stack: MemoryStack): Internal = 
@@ -186,6 +236,24 @@ object Rect:
 
       def isEmpty: Boolean = 
         rect.h <= 0 || rect.w <= 0 // Manual implementation here because of a bug in SDL_RectEmptyFloat where it works on SDL_Rect instead of SDL_FRect 
+      
+      def equals(that: Any, epsilon: Float): Boolean = 
+        that match
+          case otherRect: Rect[_] =>
+            otherRect match
+              case r if r.x.isInstanceOf[Int] =>
+                Using(stackPush()) { stack =>
+                  val o = r.asInstanceOf[Rect[Int]].toFloatRect.internal(stack)
+                  SDL_RectsEqualEpsilon(o, rect.internal(stack), epsilon)
+                }.get
+              case r if r.x.isInstanceOf[Float] =>
+                Using(stackPush()) { stack =>
+                  val o = r.asInstanceOf[Rect[Float]].internal(stack)
+                  SDL_RectsEqualEpsilon(o, rect.internal(stack), epsilon)
+                }.get
+              case _ => false
+          case _ => false
+      
 
 
 
