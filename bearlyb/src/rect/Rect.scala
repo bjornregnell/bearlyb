@@ -39,6 +39,8 @@ object Rect:
       def isEmpty: Boolean
 
       def rectIntersection(other: Rect[T]): Option[Rect[T]]
+
+      def union(other: Rect[T]): Option[Rect[T]] 
   end RectOps
 
   given RectOps[Int]:
@@ -84,6 +86,18 @@ object Rect:
           else None
         .get
 
+      def union(other: Rect[Int]): Option[Rect[Int]] =
+        Using(stackPush()): stack =>
+          val o = other.internal(stack)
+          val result = Rect.empty[Int].internal(stack)
+          if SDL_GetRectUnion(rect.internal(stack), o, result )
+          then Some(Rect.fromInternal(result))
+          else None
+        .get
+
+
+      
+
       def isEmpty: Boolean = 
         rect.h <= 0 || rect.w <= 0 // Manual implementation here in order to be consistent with the float implementation which is manual due to a bug in the library
 
@@ -128,6 +142,15 @@ object Rect:
           val o = other.internal(stack)
           val result = Rect.empty[Float].internal(stack)
           if SDL_GetRectIntersectionFloat(rect.internal(stack), o, result)
+          then Some(Rect.fromInternal(result))
+          else None
+        .get
+
+      def union(other: Rect[Float]): Option[Rect[Float]] =
+        Using(stackPush()): stack =>
+          val o = other.internal(stack)
+          val result = Rect.empty[Float].internal(stack)
+          if SDL_GetRectUnionFloat(rect.internal(stack), o, result)
           then Some(Rect.fromInternal(result))
           else None
         .get
