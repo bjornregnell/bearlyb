@@ -38,6 +38,8 @@ object Rect:
 
       def isEmpty: Boolean
 
+      def hasIntersection(other: Rect[T]): Boolean
+
       def rectIntersection(other: Rect[T]): Option[Rect[T]]
 
       def union(other: Rect[T]): Option[Rect[T]] 
@@ -76,6 +78,13 @@ object Rect:
           then Some(px1.get(0), py1.get(0), px2.get(0), py2.get(0))
           else None
         .get
+      
+      def hasIntersection(other: Rect[Int]): Boolean = 
+        Using(stackPush()): stack =>
+          val o = other.internal(stack)
+          SDL_HasRectIntersection(rect.internal(stack), o)
+        .get
+      
 
       def rectIntersection(other: Rect[Int]): Option[Rect[Int]] = 
         Using(stackPush()): stack =>
@@ -135,6 +144,12 @@ object Rect:
           if SDL_GetRectAndLineIntersectionFloat(rect.internal(stack), px1, py1, px2, py2)
           then Some(px1.get(0), py1.get(0), px2.get(0), py2.get(0))
           else None
+        .get
+
+      def hasIntersection(other: Rect[Float]): Boolean = 
+        Using(stackPush()): stack =>
+          val o = other.internal(stack)
+          SDL_HasRectIntersectionFloat(rect.internal(stack), o)
         .get
 
       def rectIntersection(other: Rect[Float]): Option[Rect[Float]] = 
