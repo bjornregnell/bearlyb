@@ -35,6 +35,8 @@ object Rect:
         x2: T,
         y2: T
       ): Option[(T, T, T, T)]
+
+      def isEmpty: Boolean
   end RectOps
 
   given RectOps[Int]:
@@ -71,6 +73,10 @@ object Rect:
           else None
         .get
 
+      def isEmpty: Boolean = 
+        rect.h <= 0 || rect.w <= 0 // Manual implementation here in order to be consistent with the float implementation which is manual due to a bug in the library
+
+
 
   given RectOps[Float]:
     type Internal = SDL_FRect
@@ -105,6 +111,9 @@ object Rect:
           then Some(px1.get(0), py1.get(0), px2.get(0), py2.get(0))
           else None
         .get
+
+      def isEmpty: Boolean = 
+        rect.h <= 0 || rect.w <= 0 // Manual implementation here because of a bug in SDL_RectEmptyFloat where it works on SDL_Rect instead of SDL_FRect 
 
 
 
