@@ -18,6 +18,9 @@ object Rect:
   def empty[T: Numeric as num] = 
     new Rect(num.zero, num.zero, num.zero, num.zero)
 
+  def enclose[T: RectOps as rectOps](ps: Seq[Point[T]], clip: Rect[T] | Null = null): Rect[T] = 
+    rectOps.enclose(ps, clip)
+
   trait RectOps[T]:
     type Internal
 
@@ -44,7 +47,11 @@ object Rect:
           pps.get(i).x(p.x).y(p.y)
         
         val r = Rect.empty[Int].internal(stack)
-        SDL_GetRectEnclosingPoints(pps, clip.internal(stack),r)
+        val c = clip match
+          case null => null
+          case clip@Rect(_, _, _, _) => clip.internal(stack)
+        
+        SDL_GetRectEnclosingPoints(pps, c ,r)
         Rect.fromInternal(r)
       .get
     end enclose
@@ -75,7 +82,11 @@ object Rect:
           pps.get(i).x(p.x).y(p.y)
         
         val r = Rect.empty[Float].internal(stack)
-        SDL_GetRectEnclosingPointsFloat(pps, clip.internal(stack),r)
+        val c = clip match
+          case null => null
+          case clip@Rect(_, _, _, _) => clip.internal(stack)
+        
+        SDL_GetRectEnclosingPointsFloat(pps, c ,r)
         Rect.fromInternal(r)
       .get
     end enclose
