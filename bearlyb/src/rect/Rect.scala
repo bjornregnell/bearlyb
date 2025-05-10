@@ -9,23 +9,20 @@ case class Rect[T](x: T, y: T, w: T, h: T)
 
 object Rect:
 
+  private[bearlyb] def fromInternal(rect: SDL_Rect): Rect[Int] =
+    Rect(rect.x(), rect.y(), rect.w(), rect.h())
+
+  private[bearlyb] def fromInternal(rect: SDL_FRect): Rect[Float] =
+    Rect(rect.x(), rect.y(), rect.w(), rect.h())
+
   def empty[T: Numeric as num] = 
     new Rect(num.zero, num.zero, num.zero, num.zero)
 
-  //TODO: this
-  def enclose[T: RectOps](ps: Seq[Point[T]], clip: Rect[T] = null): Rect[T] = 
-    Using(stackPush()): stack => 
-      val pps: SDL_Point.Buffer = SDL_Point.malloc(ps.length, stack)
-      for (p, i) <- ps.zipWithIndex do
-        pps.get(i).x(p.x).y(p.y)
-      
-      val r = Rect.empty[Int].internal(stack)
-      SDL_GetRectEnclosingPoints(pps, clip.internal(stack),r)
-      r
-    .get
-
-  trait RectOps[T]: 
+  trait RectOps[T]:
     type Internal
+
+    def enclose(ps: Seq[Point[T]], clip: Rect[T] | Null = null): Rect[T]
+
     extension (rect: Rect[T])  
       private[bearlyb] def internal(stack: MemoryStack): Internal
 
@@ -40,6 +37,18 @@ object Rect:
   given RectOps[Int]:
     type Internal = SDL_Rect
     
+    def enclose(ps: Seq[Point[Int]], clip: Rect[Int] | Null): Rect[Int] =
+      Using(stackPush()): stack => 
+        val pps: SDL_Point.Buffer = SDL_Point.malloc(ps.length, stack)
+        for (p, i) <- ps.zipWithIndex do
+          pps.get(i).x(p.x).y(p.y)
+        
+        val r = Rect.empty[Int].internal(stack)
+        SDL_GetRectEnclosingPoints(pps, clip.internal(stack),r)
+        Rect.fromInternal(r)
+      .get
+    end enclose
+
     extension (rect: Rect[Int]) 
       def internal(stack: MemoryStack): Internal = 
         SDL_Rect.malloc(stack).set(rect.x, rect.y, rect.w, rect.h)
@@ -59,6 +68,18 @@ object Rect:
   given RectOps[Float]:
     type Internal = SDL_FRect
     
+    def enclose(ps: Seq[Point[Float]], clip: Rect[Float] | Null): Rect[Float] =
+      Using(stackPush()): stack => 
+        val pps: SDL_FPoint.Buffer = SDL_FPoint.malloc(ps.length, stack)
+        for (p, i) <- ps.zipWithIndex do
+          pps.get(i).x(p.x).y(p.y)
+        
+        val r = Rect.empty[Float].internal(stack)
+        SDL_GetRectEnclosingPointsFloat(pps, clip.internal(stack),r)
+        Rect.fromInternal(r)
+      .get
+    end enclose
+
     extension (rect: Rect[Float]) 
       def internal(stack: MemoryStack): Internal = 
         SDL_FRect.malloc(stack).set(rect.x, rect.y, rect.w, rect.h)
