@@ -37,6 +37,8 @@ object Rect:
       ): Option[(T, T, T, T)]
 
       def isEmpty: Boolean
+
+      def rectIntersection(other: Rect[T]): Option[Rect[T]]
   end RectOps
 
   given RectOps[Int]:
@@ -70,6 +72,15 @@ object Rect:
           val py2 = stack.ints(y2)
           if SDL_GetRectAndLineIntersection(rect.internal(stack), px1, py1, px2, py2)
           then Some(px1.get(0), py1.get(0), px2.get(0), py2.get(0))
+          else None
+        .get
+
+      def rectIntersection(other: Rect[Int]): Option[Rect[Int]] = 
+        Using(stackPush()): stack =>
+          val o = other.internal(stack)
+          val result = Rect.empty[Int].internal(stack)
+          if SDL_GetRectIntersection(rect.internal(stack), o, result )
+          then Some(Rect.fromInternal(result))
           else None
         .get
 
@@ -109,6 +120,15 @@ object Rect:
           val px1 = stack.floats(x1)
           if SDL_GetRectAndLineIntersectionFloat(rect.internal(stack), px1, py1, px2, py2)
           then Some(px1.get(0), py1.get(0), px2.get(0), py2.get(0))
+          else None
+        .get
+
+      def rectIntersection(other: Rect[Float]): Option[Rect[Float]] = 
+        Using(stackPush()): stack =>
+          val o = other.internal(stack)
+          val result = Rect.empty[Float].internal(stack)
+          if SDL_GetRectIntersectionFloat(rect.internal(stack), o, result)
+          then Some(Rect.fromInternal(result))
           else None
         .get
 
