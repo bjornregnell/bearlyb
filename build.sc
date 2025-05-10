@@ -5,7 +5,7 @@ import scalalib.api.CompilationResult
 import coursier.MavenRepository
 
 object bearlyb extends LwjglModule("3.4.0-SNAPSHOT"):
-  def scalaVersion = "3.6.4"
+  def scalaVersion = "3.7.0"
 
   val deps = Agg(
     ivy"com.lihaoyi::os-lib:0.11.4",
@@ -25,7 +25,7 @@ object bearlyb extends LwjglModule("3.4.0-SNAPSHOT"):
 end bearlyb
 
 object playground extends LwjglModule("3.4.0-SNAPSHOT"):
-  def scalaVersion = "3.6.4"
+  def scalaVersion = "3.7.0"
   def ivyDeps = Agg(ivy"com.lihaoyi::os-lib:0.11.4") ++ lwjglDeps
   def moduleDeps = Seq(bearlyb)
 
