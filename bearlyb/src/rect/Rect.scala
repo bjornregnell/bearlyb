@@ -5,7 +5,10 @@ import SDLRect.*
 import org.lwjgl.system.MemoryStack, MemoryStack.*
 import scala.util.Using
 
-case class Rect[T](x: T, y: T, w: T, h: T)
+case class Rect[T: Rect.RectOps](x: T, y: T, w: T, h: T):
+  override def equals(that: Any): Boolean = 
+    Rect.eq[T](this, that)
+end Rect
 
 object Rect:
 
@@ -15,13 +18,21 @@ object Rect:
   private[bearlyb] def fromInternal(rect: SDL_FRect): Rect[Float] =
     Rect(rect.x(), rect.y(), rect.w(), rect.h())
 
-  def empty[T: Numeric as num] = 
+  def empty[T: RectOps: Numeric as num ] = 
     new Rect(num.zero, num.zero, num.zero, num.zero)
+
+  def enclose[T: RectOps as rectOps](ps: Seq[Point[T]], clip: Rect[T] | Null = null): Rect[T] = 
+    rectOps.enclose(ps, clip)
+
+  private[bearlyb] def eq[T: RectOps as rectOps](rect: Rect[T], other: Any ): Boolean =
+    rectOps.eq(rect, other)
 
   trait RectOps[T]:
     type Internal
 
     def enclose(ps: Seq[Point[T]], clip: Rect[T] | Null = null): Rect[T]
+
+    private[bearlyb] def eq(rect: Rect[T], other: Any ): Boolean
 
     extension (rect: Rect[T])  
       private[bearlyb] def internal(stack: MemoryStack): Internal
@@ -32,6 +43,17 @@ object Rect:
         x2: T,
         y2: T
       ): Option[(T, T, T, T)]
+
+      def isEmpty: Boolean
+
+      def hasIntersection(other: Rect[T]): Boolean
+
+      def rectIntersection(other: Rect[T]): Option[Rect[T]]
+
+      def contains(point: Point[T]): Boolean
+
+      def union(other: Rect[T]): Option[Rect[T]] 
+
   end RectOps
 
   given RectOps[Int]:
@@ -44,10 +66,34 @@ object Rect:
           pps.get(i).x(p.x).y(p.y)
         
         val r = Rect.empty[Int].internal(stack)
-        SDL_GetRectEnclosingPoints(pps, clip.internal(stack),r)
+        val c = clip match
+          case null => null
+          case clip@Rect(_, _, _, _) => clip.internal(stack)
+        
+        SDL_GetRectEnclosingPoints(pps, c ,r)
         Rect.fromInternal(r)
       .get
     end enclose
+
+    def eq(rect: Rect[Int], that: Any): Boolean = 
+      that match
+        case otherRect: Rect[_] =>
+          otherRect match
+            case r if r.x.isInstanceOf[Int] =>
+              Using(stackPush()) { stack =>
+                val o = r.asInstanceOf[Rect[Int]].internal(stack)
+                SDL_RectsEqual(o, rect.internal(stack))
+              }.get
+            case r if r.x.isInstanceOf[Float] =>
+              Using(stackPush()) { stack =>
+                val o = r.asInstanceOf[Rect[Float]].internal(stack)
+                SDL_RectsEqualFloat(o, rect.toFloatRect.internal(stack))
+              }.get
+            case _ => false
+        case _ => false
+    end eq
+
+
 
     extension (rect: Rect[Int]) 
       def internal(stack: MemoryStack): Internal = 
@@ -63,6 +109,45 @@ object Rect:
           then Some(px1.get(0), py1.get(0), px2.get(0), py2.get(0))
           else None
         .get
+      
+      def hasIntersection(other: Rect[Int]): Boolean = 
+        Using(stackPush()): stack =>
+          val o = other.internal(stack)
+          SDL_HasRectIntersection(rect.internal(stack), o)
+        .get
+      
+
+      def rectIntersection(other: Rect[Int]): Option[Rect[Int]] = 
+        Using(stackPush()): stack =>
+          val o = other.internal(stack)
+          val result = Rect.empty[Int].internal(stack)
+          if SDL_GetRectIntersection(rect.internal(stack), o, result )
+          then Some(Rect.fromInternal(result))
+          else None
+        .get
+
+      def union(other: Rect[Int]): Option[Rect[Int]] =
+        Using(stackPush()): stack =>
+          val o = other.internal(stack)
+          val result = Rect.empty[Int].internal(stack)
+          if SDL_GetRectUnion(rect.internal(stack), o, result )
+          then Some(Rect.fromInternal(result))
+          else None
+        .get
+
+      def contains(point: Point[Int]): Boolean =
+        Using(stackPush()): stack =>
+          val p: SDL_Point = SDL_Point.malloc(stack)
+          p.x(point.x).y(point.y)
+          SDL_PointInRect(p, rect.internal(stack))
+        .get
+      
+      def toFloatRect: Rect[Float] = 
+        new Rect[Float](rect.x.toFloat, rect.y.toFloat, rect.w.toFloat, rect.h.toFloat)
+
+      def isEmpty: Boolean = 
+        rect.h <= 0 || rect.w <= 0 // Manual implementation here in order to be consistent with the float implementation which is manual due to a bug in the library
+
 
 
   given RectOps[Float]:
@@ -75,10 +160,33 @@ object Rect:
           pps.get(i).x(p.x).y(p.y)
         
         val r = Rect.empty[Float].internal(stack)
-        SDL_GetRectEnclosingPointsFloat(pps, clip.internal(stack),r)
+        val c = clip match
+          case null => null
+          case clip@Rect(_, _, _, _) => clip.internal(stack)
+        
+        SDL_GetRectEnclosingPointsFloat(pps, c ,r)
         Rect.fromInternal(r)
       .get
     end enclose
+
+
+    def eq(rect: Rect[Float], that: Any): Boolean = 
+      that match
+        case otherRect: Rect[_] =>
+          otherRect match
+            case r if r.x.isInstanceOf[Int] =>
+              Using(stackPush()) { stack =>
+                val o = r.asInstanceOf[Rect[Int]].toFloatRect.internal(stack)
+                SDL_RectsEqualFloat(o, rect.internal(stack))
+              }.get
+            case r if r.x.isInstanceOf[Float] =>
+              Using(stackPush()) { stack =>
+                val o = r.asInstanceOf[Rect[Float]].internal(stack)
+                SDL_RectsEqualFloat(o, rect.internal(stack))
+              }.get
+            case _ => false
+        case _ => false
+    end eq
 
     extension (rect: Rect[Float]) 
       def internal(stack: MemoryStack): Internal = 
@@ -94,6 +202,58 @@ object Rect:
           then Some(px1.get(0), py1.get(0), px2.get(0), py2.get(0))
           else None
         .get
+
+      def hasIntersection(other: Rect[Float]): Boolean = 
+        Using(stackPush()): stack =>
+          val o = other.internal(stack)
+          SDL_HasRectIntersectionFloat(rect.internal(stack), o)
+        .get
+
+      def rectIntersection(other: Rect[Float]): Option[Rect[Float]] = 
+        Using(stackPush()): stack =>
+          val o = other.internal(stack)
+          val result = Rect.empty[Float].internal(stack)
+          if SDL_GetRectIntersectionFloat(rect.internal(stack), o, result)
+          then Some(Rect.fromInternal(result))
+          else None
+        .get
+
+      def union(other: Rect[Float]): Option[Rect[Float]] =
+        Using(stackPush()): stack =>
+          val o = other.internal(stack)
+          val result = Rect.empty[Float].internal(stack)
+          if SDL_GetRectUnionFloat(rect.internal(stack), o, result)
+          then Some(Rect.fromInternal(result))
+          else None
+        .get
+
+      def contains(point: Point[Float]): Boolean =
+        Using(stackPush()): stack =>
+          val p: SDL_FPoint = SDL_FPoint.malloc(stack)
+          p.x(point.x).y(point.y)
+          SDL_PointInRectFloat(p, rect.internal(stack))
+        .get
+
+      def isEmpty: Boolean = 
+        rect.h <= 0 || rect.w <= 0 // Manual implementation here because of a bug in SDL_RectEmptyFloat where it works on SDL_Rect instead of SDL_FRect 
+      
+      def equals(that: Any, epsilon: Float): Boolean = 
+        that match
+          case otherRect: Rect[_] =>
+            otherRect match
+              case r if r.x.isInstanceOf[Int] =>
+                Using(stackPush()) { stack =>
+                  val o = r.asInstanceOf[Rect[Int]].toFloatRect.internal(stack)
+                  SDL_RectsEqualEpsilon(o, rect.internal(stack), epsilon)
+                }.get
+              case r if r.x.isInstanceOf[Float] =>
+                Using(stackPush()) { stack =>
+                  val o = r.asInstanceOf[Rect[Float]].internal(stack)
+                  SDL_RectsEqualEpsilon(o, rect.internal(stack), epsilon)
+                }.get
+              case _ => false
+          case _ => false
+      
 
 
 

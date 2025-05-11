@@ -1,12 +1,11 @@
 package bearlyb.video
 
-import org.lwjgl.sdl, sdl.SDLVideo.*, sdl.SDLError.*
+import org.lwjgl.sdl, sdl.SDLVideo.*
 import
   org.lwjgl.system,
   system.MemoryStack.stackPush
 import scala.util.Using
 import bearlyb.*
-import render.Renderer
 import render.Renderer
 
 final class Window private (private[bearlyb] val pWindow: Long):
