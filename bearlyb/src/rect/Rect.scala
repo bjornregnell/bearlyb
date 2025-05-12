@@ -8,9 +8,38 @@ import scala.math.
   Numeric.Implicits.infixNumericOps,
   Ordering.Implicits.infixOrderingOps
 
-case class Rect[T](x: T, y: T, w: T, h: T)
+case class Rect[T](x: T, y: T, w: T, h: T):
+  // line intersections
+  def intersection(x1: T, y1: T, x2: T, y2: T): (near: Option[Point[T]], far: Option[Point[T]]) = ???
+  def intersection(p1: Point[T], p2: Point[T]): (near: Option[Point[T]], far: Option[Point[T]]) =
+    val ((x1, y1), (x2, y2)) = (p1, p2)
+    intersection(x1, y1, x2, y2)
+  
+  // rect intersection
+  def intersection(other: Rect[T]): Option[Rect[T]] = ???
+
+  def union(other: Rect[T]): Option[Rect[T]] = ???
+
+  def isEmpty: Boolean = ???
+
+  // convert to different ints
+  def toFloatRect: Rect[Float] = ???
+  def toIntRect: Rect[Int] = ???
 
 object Rect:
+
+  def empty[T: Numeric as num ] =
+    new Rect(num.zero, num.zero, num.zero, num.zero)
+
+  def enclose[T: Numeric](points: IterableOnce[Point[T]]) = ???
+
+  private[bearlyb] def fromInternal(rect: SDL_Rect): Rect[Int] =
+    new Rect(rect.x(), rect.y(), rect.w(), rect.h())
+
+  private[bearlyb] def fromInternal(rect: SDL_FRect): Rect[Float] =
+    new Rect(rect.x(), rect.y(), rect.w(), rect.h())
+
+
   extension [T: Numeric](self: Rect[T])
     def equalsEpsilon(other: Rect[T], epsilon: T): Boolean =
       self == other ||
@@ -23,15 +52,6 @@ object Rect:
     
     def ~==(other: Rect[T])(using epsilon: Epsilon[T]): Boolean =
         self.equalsEpsilon(self, epsilon)
-
-  private[bearlyb] def fromInternal(rect: SDL_Rect): Rect[Int] =
-    new Rect(rect.x(), rect.y(), rect.w(), rect.h())
-
-  private[bearlyb] def fromInternal(rect: SDL_FRect): Rect[Float] =
-    new Rect(rect.x(), rect.y(), rect.w(), rect.h())
-
-  def empty[T: Numeric as num ] =
-    new Rect(num.zero, num.zero, num.zero, num.zero)
 
   private[bearlyb] sealed trait InternalOps[T]:
     type Internal
