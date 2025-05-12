@@ -8,8 +8,7 @@ import scala.math.
   Numeric.Implicits.infixNumericOps,
   Ordering.Implicits.infixOrderingOps
 
-case class Rect[T](x: T, y: T, w: T, h: T):
-  type Epsilon = T
+case class Rect[T](x: T, y: T, w: T, h: T)
 
 object Rect:
   extension [T: Numeric](self: Rect[T])
@@ -22,8 +21,8 @@ object Rect:
         (self.h - other.h).abs <= epsilon
       )
     
-    def ~==(other: Rect[T])(using epsilon: self.Epsilon): Boolean =
-      self.equalsEpsilon(other, epsilon)
+    def ~==(other: Rect[T])(using epsilon: Epsilon[T]): Boolean =
+        self.equalsEpsilon(self, epsilon)
 
   private[bearlyb] def fromInternal(rect: SDL_Rect): Rect[Int] =
     new Rect(rect.x(), rect.y(), rect.w(), rect.h())
@@ -53,4 +52,16 @@ object Rect:
       def internal(stack: MemoryStack): Internal =
         val Rect(x, y, w, h) = r
         SDL_FRect.malloc(stack).set(x, y, w, h)
+
+  opaque type Epsilon[T] = T
+  object Epsilon:
+    extension [T](ep: Epsilon[T])
+      def value: T = ep
+
+    def apply[T](value: T): Epsilon[T] = value
+    def unapply[T](wrapped: Epsilon[T]): T = wrapped
+
+  given Epsilon[Float] = 1.1920928955078125e-07f
+  given Epsilon[Double] = 1.1920928955078125e-07d
+  
 end Rect
