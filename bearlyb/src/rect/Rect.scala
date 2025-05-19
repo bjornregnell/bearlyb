@@ -1,9 +1,10 @@
 package bearlyb.rect
 
 import org.lwjgl.sdl.*
-import SDLRect.*
-import org.lwjgl.system.MemoryStack, MemoryStack.*
-import scala.util.Using
+// import SDLRect.*
+// import scala.util.Using
+import org.lwjgl.system.MemoryStack
+// import MemoryStack.*
 import scala.math.
   Numeric.Implicits.infixNumericOps,
   Ordering.Implicits.infixOrderingOps
@@ -51,7 +52,7 @@ object Rect:
       )
     
     def ~==(other: Rect[T])(using epsilon: Epsilon[T]): Boolean =
-        self.equalsEpsilon(self, epsilon)
+        self.equalsEpsilon(other, epsilon)
 
   private[bearlyb] sealed trait InternalOps[T]:
     type Internal
