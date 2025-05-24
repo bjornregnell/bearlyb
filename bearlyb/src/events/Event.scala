@@ -147,7 +147,7 @@ object Event:
 
     case ButtonDown(windowID: WindowID, which: MouseID, button: Byte, down: Boolean, clicks: Byte, x: Float, y: Float)
     case ButtonUp(windowID: WindowID, which: MouseID, button: Byte, down: Boolean, clicks: Byte, x: Float, y: Float)
-    case Motion(which: MouseID, state: Set[mouse.Mouse.Button], x: Float, y: Float, xrel: Float, yrel: Float)
+    case Motion(which: MouseID, state: Set[mouse.Button], x: Float, y: Float, xrel: Float, yrel: Float)
     case Added(which: MouseID)
     case Removed(which: MouseID)
 
