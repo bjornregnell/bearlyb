@@ -15,3 +15,8 @@ enum PenAxis:
   case Slider
   /** Pressure from squeezing the pen ("barrel pressure"). */
   case TangentialPressure
+
+  def internal: Int = ordinal
+
+object PenAxis:
+  private[bearlyb] def fromInternal(internal: Int) = PenAxis.fromOrdinal(internal)
