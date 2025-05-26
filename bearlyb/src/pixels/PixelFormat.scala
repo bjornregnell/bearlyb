@@ -153,4 +153,6 @@ enum PixelFormat(private[bearlyb] val internal: Int):
   case XRGB32 extends PixelFormat(SDL_PIXELFORMAT_XRGB32)
   case BGRX32 extends PixelFormat(SDL_PIXELFORMAT_BGRX32)
   case XBGR32 extends PixelFormat(SDL_PIXELFORMAT_XBGR32)
-end PixelFormat
+object PixelFormat:
+  private[bearlyb] def unapply(format: PixelFormat): Some[Int] =
+    Some(format.internal)

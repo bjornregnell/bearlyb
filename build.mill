@@ -32,7 +32,7 @@ object playground extends LwjglModule("3.4.0-SNAPSHOT"):
 trait LwjglModule(version: String) extends ScalaModule:
 
   val lwjglLibs = "lwjgl" +: Seq(
-    "sdl"
+    "sdl", "stb"
   ).map("lwjgl-" + _)
 
   val lwjglNatives = Seq(
