@@ -12,7 +12,7 @@
 * SDL_EGL_GetWindowSurface
 * SDL_EGL_SetAttributeCallbacks
 * SDL_EnableScreenSaver
-* SDL_FlashWindow
+* ~~SDL_FlashWindow~~
 * SDL_GetClosestFullscreenDisplayMode
 * SDL_GetCurrentDisplayMode
 * SDL_GetCurrentDisplayOrientation

@@ -1,7 +1,6 @@
 package build
 
 import mill.*, scalalib.*
-import scalalib.api.CompilationResult
 import coursier.MavenRepository
 
 object bearlyb extends LwjglModule("3.4.0-SNAPSHOT"):

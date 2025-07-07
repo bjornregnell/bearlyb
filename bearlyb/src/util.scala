@@ -6,9 +6,9 @@ private[bearlyb] inline val NullPtr = org.lwjgl.system.MemoryUtil.NULL
 private[bearlyb] def sdlError(): Nothing =
   sys.error(Console.RED + s"SDL Error: ${SDL_GetError()}")
 
-extension (notError: Boolean)
+extension (success: Boolean)
   private[bearlyb] def sdlErrorCheck[T](value: T = ()): T =    
-    if notError then value else sdlError()
+    if success then value else sdlError()
 
 extension (ptr: Long)
   private[bearlyb] def sdlCreationCheck(): Long =

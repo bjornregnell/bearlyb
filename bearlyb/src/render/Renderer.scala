@@ -9,6 +9,6 @@ class Renderer private (private[bearlyb] val pointer: Long)
 object Renderer:
   def apply(window: Window): Renderer =
     new Renderer(
-      SDL_CreateRenderer(window.pWindow, null.asInstanceOf[String])
+      SDL_CreateRenderer(window.pWindow, "")
         .sdlCreationCheck()
     )
