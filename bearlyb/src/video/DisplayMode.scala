@@ -17,6 +17,7 @@ final class DisplayMode private (private[bearlyb] val internal: SDL_DisplayMode)
     )
 
   override def toString: String =
+    val (n, d) = refreshRateFraction
     s"""DisplayMode(
     |displayID: $displayID,
     |format: $format,
@@ -24,7 +25,7 @@ final class DisplayMode private (private[bearlyb] val internal: SDL_DisplayMode)
     |height: $height,
     |pixelDensity: $pixelDensity,
     |refreshRate: $refreshRate,
-    |refreshRateFraction: $refreshRateFraction
+    |refreshRateFraction: $n/$d
     |)""".stripMargin
 
 object DisplayMode:

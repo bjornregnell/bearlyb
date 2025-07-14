@@ -1,22 +1,27 @@
-package build
+//| mill-version: 1.0.0
+//| mill-jvm-version: 21
 
 import mill.*, scalalib.*
 import coursier.MavenRepository
+import mill.api.Task.Simple
 
 object bearlyb extends LwjglModule("3.4.0-SNAPSHOT"):
-  def scalaVersion = "3.7.0"
+  def scalaVersion = "3.7.1"
 
   val deps = Seq(
     mvn"com.lihaoyi::os-lib:0.11.4",
     mvn"com.softwaremill.ox::core:0.5.13",
-    mvn"io.github.iltotore::iron:3.0.1",
+    mvn"io.github.iltotore::iron:3.0.1"
   )
-
   def mvnDeps = super.mvnDeps() ++ deps
-
   def runMvnDeps = super.runMvnDeps()
-
-  def scalacOptions = Seq("-deprecation", "-Wall", "-Yexplicit-nulls", "-Werror")
+  def scalacOptions = Seq(
+    "-deprecation",
+    "-Wall",
+    "-Yexplicit-nulls",
+    "-Werror",
+    "-new-syntax"
+  )
 
   object test extends ScalaTests with TestModule.Munit:
     def mvnDeps = Seq(mvn"org.scalameta::munit:1.0.4")
@@ -24,14 +29,15 @@ object bearlyb extends LwjglModule("3.4.0-SNAPSHOT"):
 end bearlyb
 
 object playground extends LwjglModule("3.4.0-SNAPSHOT"):
-  def scalaVersion = "3.7.0"
+  def scalaVersion = "3.7.1"
   def mvnDeps = Seq(mvn"com.lihaoyi::os-lib:0.11.4") ++ lwjglDeps
   def moduleDeps = Seq(bearlyb)
 
 trait LwjglModule(version: String) extends ScalaModule:
 
   val lwjglLibs = "lwjgl" +: Seq(
-    "sdl", "stb"
+    "sdl",
+    "stb"
   ).map("lwjgl-" + _)
 
   val lwjglNatives = Seq(
@@ -64,7 +70,9 @@ trait LwjglModule(version: String) extends ScalaModule:
     yield lwjglDep(dep, Some(native))
 
   def forkArgs =
-    if isMacOS then Seq("-XstartOnFirstThread") else Seq.empty
+    if scala.util.Properties.isMac
+    then Seq("-XstartOnFirstThread")
+    else Seq.empty
 
   def mvnDeps = lwjglDeps
   def runMvnDeps = runLwjglDeps
@@ -73,7 +81,3 @@ trait LwjglModule(version: String) extends ScalaModule:
   )
 
 end LwjglModule
-
-lazy val isMacOS =
-  val osName = sys.props("os.name")
-  osName.startsWith("Mac OS X") || osName.startsWith("Darwin")
