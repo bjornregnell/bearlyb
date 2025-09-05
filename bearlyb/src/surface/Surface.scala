@@ -8,9 +8,14 @@ import scala.util.Using
 import bearlyb.*, pixels.PixelFormat, rect.*
 import java.nio.ByteBuffer
 import scala.annotation.implicitNotFound
+import bearlyb.surface.Surface.RawColor
 
 class Surface private (private[bearlyb] val internal: SDL_Surface, private val imageData: Option[ByteBuffer] = None):
   import Surface.{PixelData, Color, Pos}
+
+  lazy val pixelFormatDetails =
+    SDL_GetPixelFormatDetails(internal.format)
+      .sdlCreationCheck()
   
   def clear(r: Float, g: Float, b: Float, a: Float = 1): Unit =
     SDL_ClearSurface(internal, r, g, b, a).sdlErrorCheck()
@@ -18,11 +23,11 @@ class Surface private (private[bearlyb] val internal: SDL_Surface, private val i
   /** 'Blit' a surface onto this one. Blitting is like taking a picture
    * and putting it on top of another one.
    */
-  def blit(src: Surface, at: Pos, mask: Option[Rect[Int]]): Unit =
+  def blit(src: Surface, at: Pos, mask: Rect[Int] | Null = null): Unit =
     Using(stackPush()): stack =>
       val srcrect = mask match
-        case None => null
-        case Some(mask) =>
+        case null => null
+        case mask: Rect[Int] =>
           SDL_Rect.malloc(stack)
             .x(mask.x).y(mask.y).w(mask.w).h(mask.h)
       val dstrect =
@@ -49,8 +54,41 @@ class Surface private (private[bearlyb] val internal: SDL_Surface, private val i
   def height: Int = internal.h
   def format: PixelFormat = PixelFormat.fromInternal(internal.format)
 
+  def apply(pos: Pos): Surface.RawColor =
+    assert(pos.x < internal.w && pos.y < internal.h)
+    val bpp = pixelFormatDetails.bits_per_pixel
+    val Bpp = pixelFormatDetails.bytes_per_pixel
+    require(bpp == 8 || bpp == 16 || bpp == 32, s"Unknown bpp: $bpp")
+
+    val idx = pos.y * internal.pitch + pos.x * Bpp
+    val raw =
+      Using(stackPush()): stack =>
+        val raw = stack.calloc(4)
+        for i <- 0 until Bpp do
+          val b = internal.pixels.get(idx + i)
+          raw.put(i, b)
+        raw.asIntBuffer.get(0)
+      .get
+
+    RawColor(raw)
+  end apply
+
   def apply[T: PixelData as pix](pos: Pos): Color[T] =
     pix.get(this)(pos)
+
+  def update(pos: Pos, color: RawColor): Unit =
+    assert(pos.x < internal.w && pos.y < internal.h)
+    val bpp = pixelFormatDetails.bits_per_pixel
+    val Bpp = pixelFormatDetails.bytes_per_pixel
+    require(bpp == 8 || bpp == 16 || bpp == 32, s"Unknown bpp: $bpp")
+
+    val idx = pos.y * internal.pitch + pos.x * Bpp
+    Using(stackPush()): stack =>
+      val raw = stack.malloc(4).putInt(color.internal)
+      for i <- 0 until Bpp do
+        internal.pixels.put(idx + i, raw.get(i))
+    .get
+  end update
 
   def update[T: PixelData as pix](pos: Pos, color: Color[T]): Unit =
     pix.put(this)(pos, color)
@@ -127,7 +165,7 @@ object Surface:
   type Color[T] = (r: T, g: T, b: T, a: T)
   type Pos = Point[Int]
 
-  def apply(width: Int, height: Int, format: PixelFormat = PixelFormat.RGBA8888): Surface =
+  def apply(width: Int, height: Int, format: PixelFormat = PixelFormat.RGBA32): Surface =
     new Surface(
       SDL_CreateSurface(width, height, format.internal)
         .sdlCreationCheck()
@@ -241,6 +279,24 @@ object Surface:
       val (r, g, b, a) = bytePix.get(surf)(pos)
       (r.toInt, g.toInt, b.toInt, a.toInt)
     def put(surf: Surface)(pos: Pos, color: Color[Int]): Unit =
+      val (r, g, b, a) = color
+      bytePix.put(surf)(pos, (r.toByte, g.toByte, b.toByte, a.toByte))
+  end given
+
+  given (bytePix: PixelData[Byte]) => PixelData[Long]:
+    def get(surf: Surface)(pos: Pos): Color[Long] =
+      val (r, g, b, a) = bytePix.get(surf)(pos)
+      (r.toLong, g.toLong, b.toLong, a.toLong)
+    def put(surf: Surface)(pos: Pos, color: Color[Long]): Unit =
+      val (r, g, b, a) = color
+      bytePix.put(surf)(pos, (r.toByte, g.toByte, b.toByte, a.toByte))
+  end given
+
+  given (bytePix: PixelData[Byte]) => PixelData[BigInt]:
+    def get(surf: Surface)(pos: Pos): Color[BigInt] =
+      val (r, g, b, a) = bytePix.get(surf)(pos)
+      (BigInt(r), BigInt(g), BigInt(b), BigInt(a))
+    def put(surf: Surface)(pos: Pos, color: Color[BigInt]): Unit =
       val (r, g, b, a) = color
       bytePix.put(surf)(pos, (r.toByte, g.toByte, b.toByte, a.toByte))
   end given
