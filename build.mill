@@ -5,7 +5,10 @@ import mill.*, scalalib.*
 import coursier.MavenRepository
 import mill.api.Task.Simple
 
-object bearlyb extends LwjglModule("3.4.0-SNAPSHOT"):
+trait BearlybModule extends ScalaModule:
+  final def scalaVersion: Simple[String] = "3.7.2"
+
+object bearlyb extends LwjglModule:
 
   val deps = Seq(
     mvn"com.lihaoyi::os-lib:0.11.4",
@@ -23,17 +26,20 @@ object bearlyb extends LwjglModule("3.4.0-SNAPSHOT"):
   )
 
   object test extends ScalaTests with TestModule.Munit:
-    def mvnDeps = Seq(mvn"org.scalameta::munit:1.0.4")
+    def mvnDeps = Seq(
+      mvn"org.scalameta::munit:1.0.4",
+      mvn"org.scalameta::munit-scalacheck:1.1.0"
+    )
 
 end bearlyb
 
-object playground extends LwjglModule("3.4.0-SNAPSHOT"):
+object playground extends LwjglModule:
   def mvnDeps = Seq(mvn"com.lihaoyi::os-lib:0.11.4") ++ lwjglDeps
   def moduleDeps = Seq(bearlyb)
 
-trait LwjglModule(version: String) extends ScalaModule:
+trait LwjglModule extends BearlybModule:
 
-  final def scalaVersion = "3.7.2"
+  val version = "3.4.0-SNAPSHOT"
 
   val lwjglLibs = "lwjgl" +: Seq(
     "sdl",
