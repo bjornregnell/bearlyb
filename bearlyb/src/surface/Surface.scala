@@ -1,19 +1,20 @@
 package bearlyb.surface
 
 import org.lwjgl.sdl, sdl.SDLSurface.*, sdl.SDL_Surface,
-  sdl.SDLError.SDL_SetError, sdl.SDLPixels.*, sdl.*
+  sdl.SDLError.SDL_SetError, sdl.SDLPixels.*
 import org.lwjgl.stb.STBImage.*
 import org.lwjgl.system.MemoryStack.*
 import scala.util.Using
-import bearlyb.*, pixels.PixelFormat, rect.*
+import bearlyb.*, pixels.{PixelFormat, Color}, rect.*
 import java.nio.ByteBuffer
 import scala.annotation.implicitNotFound
 import bearlyb.surface.Surface.RawColor
+import scala.math.Numeric.Implicits.infixNumericOps
 
 class Surface private (private[bearlyb] val internal: SDL_Surface, private val imageData: Option[ByteBuffer] = None):
-  import Surface.{PixelData, Color, Pos}
+  import Surface.{PixelData, Pos}
 
-  lazy val pixelFormatDetails =
+  def pixFormat =
     SDL_GetPixelFormatDetails(internal.format)
       .sdlCreationCheck()
   
@@ -21,25 +22,56 @@ class Surface private (private[bearlyb] val internal: SDL_Surface, private val i
     SDL_ClearSurface(internal, r, g, b, a).sdlErrorCheck()
 
   /** 'Blit' a surface onto this one. Blitting is like taking a picture
-   * and putting it on top of another one.
-   */
+    * and putting it on top of another one.
+    */
   def blit(src: Surface, at: Pos, mask: Rect[Int] | Null = null): Unit =
     Using(stackPush()): stack =>
-      val srcrect = mask match
-        case null => null
-        case mask: Rect[Int] =>
-          SDL_Rect.malloc(stack)
-            .x(mask.x).y(mask.y).w(mask.w).h(mask.h)
-      val dstrect =
-        SDL_Rect.malloc(stack)
-          .x(at.x).y(at.y)
+      val srcrect = mask.internal(stack)
+      val dstrect = Rect(at.x, at.y, 0, 0).internal(stack)
       SDL_BlitSurface(src.internal, srcrect, this.internal, dstrect)
         .sdlErrorCheck()
     .get
 
+  def blitScaled(src: Surface, dstmask: Rect[Int] | Null = null, srcmask: Rect[Int] | Null = null)(using scaleMode: ScaleMode): Unit =
+    Using(stackPush()): stack =>
+      val srcrect = srcmask.internal(stack)
+      val dstrect = dstmask.internal(stack)
+      SDL_BlitSurfaceScaled(src.internal, srcrect, this.internal, dstrect, scaleMode.ordinal)
+        .sdlErrorCheck()
+    .get
+
+  def blitTiled(src: Surface, dstmask: Rect[Int] | Null = null, srcmask: Rect[Int] | Null = null): Unit =
+    Using(stackPush()): stack =>
+      val srcrect = srcmask.internal(stack)
+      val dstrect = dstmask.internal(stack)
+      SDL_BlitSurfaceTiled(src.internal, srcrect, this.internal, dstrect)
+        .sdlErrorCheck()
+    .get
+
+  def blitTiledWithScale[T: Numeric](src: Surface, scale: T, dstmask: Rect[Int] | Null = null, srcmask: Rect[Int] | Null = null)(using scaleMode: ScaleMode): Unit =
+    Using(stackPush()): stack =>
+      val srcrect = srcmask.internal(stack)
+      val dstrect = dstmask.internal(stack)
+      SDL_BlitSurfaceTiledWithScale(src.internal, srcrect, scale.toFloat, scaleMode.ordinal, this.internal, dstrect)
+        .sdlErrorCheck()
+    .get
+
+  def scaled[T: Numeric as num](by: T)(using scaleMode: ScaleMode): Surface =
+    new Surface(
+      SDL_ScaleSurface(internal, (num.fromInt(width) * by).toInt, (num.fromInt(height) * by).toInt, scaleMode.ordinal)
+        .sdlCreationCheck()
+    )
+
+  def scaled(width: Int, height: Int)(using scaleMode: ScaleMode): Surface =
+    new Surface(
+      SDL_ScaleSurface(internal, width, height, scaleMode.ordinal)
+        .sdlCreationCheck()
+    )
+
   def destroy(): Unit =
     SDL_DestroySurface(internal)
-    imageData.foreach(stbi_image_free)
+    if internal.refcount == 0 then
+      imageData.foreach(stbi_image_free)
 
   def duplicate: Surface =
     new Surface(SDL_DuplicateSurface(internal).sdlCreationCheck())
@@ -56,9 +88,7 @@ class Surface private (private[bearlyb] val internal: SDL_Surface, private val i
 
   def apply(pos: Pos): Surface.RawColor =
     assert(pos.x < internal.w && pos.y < internal.h)
-    val bpp = pixelFormatDetails.bits_per_pixel
-    val Bpp = pixelFormatDetails.bytes_per_pixel
-    require(bpp == 8 || bpp == 16 || bpp == 32, s"Unknown bpp: $bpp")
+    val Bpp = pixFormat.bytes_per_pixel
 
     val idx = pos.y * internal.pitch + pos.x * Bpp
     val raw =
@@ -78,8 +108,8 @@ class Surface private (private[bearlyb] val internal: SDL_Surface, private val i
 
   def update(pos: Pos, color: RawColor): Unit =
     assert(pos.x < internal.w && pos.y < internal.h)
-    val bpp = pixelFormatDetails.bits_per_pixel
-    val Bpp = pixelFormatDetails.bytes_per_pixel
+    val bpp = pixFormat.bits_per_pixel
+    val Bpp = pixFormat.bytes_per_pixel
     require(bpp == 8 || bpp == 16 || bpp == 32, s"Unknown bpp: $bpp")
 
     val idx = pos.y * internal.pitch + pos.x * Bpp
@@ -156,13 +186,59 @@ class Surface private (private[bearlyb] val internal: SDL_Surface, private val i
   def fillRect[T: ([x] =>> Integral[x] | Fractional[x])](x: Int, y: Int, w: Int, h: Int, color: Color[T]): Unit =
     fillRect(x, y, w, h, mapRGBA(color))
 
+  /** Adds an alternative version of this surface,
+    * typically used for high dpi representations
+    * of cursors or icons. This call adds a reference
+    * to the image so you should call image.destroy()
+    * after this method returns.
+    * 
+    * @param image
+    *   alternative version of this surface,
+    *   does not need to be the same format,
+    *   size, or have the same content as this
+    *   surface.
+    */
+  def addAlternateImage(image: Surface): Unit =
+    SDL_AddSurfaceAlternateImage(internal, image.internal)
+      .sdlErrorCheck()
+
+  def hasAlternateImages: Boolean =
+    SDL_SurfaceHasAlternateImages(internal)
+
+  def removeAlternateImages(): Unit =
+    SDL_RemoveSurfaceAlternateImages(internal)
+
+  def getImages(): Iterator[Surface] =
+    new Iterator[Surface]:
+      val buffer = SDL_GetSurfaceImages(internal)
+      
+      override def next(): Surface =
+        if !hasNext then
+          throw new NoSuchElementException("no more alternate images")
+        val img = buffer.get()
+        new Surface(SDL_Surface.create(img))
+
+      override def hasNext: Boolean =
+        buffer.hasRemaining
+    end new
+  end getImages
+
+  def lock(): Unit =
+    SDL_LockSurface(internal)
+      .sdlErrorCheck()
+  
+  def unlock(): Unit =
+    SDL_UnlockSurface(internal)
+
+  def mustLock: Boolean =
+    SDL_MUSTLOCK(internal)
+
   override def toString: String =
     s"Surface($width, $height, $format)"
 
 end Surface
 
 object Surface:
-  type Color[T] = (r: T, g: T, b: T, a: T)
   type Pos = Point[Int]
 
   def apply(width: Int, height: Int, format: PixelFormat = PixelFormat.RGBA32): Surface =

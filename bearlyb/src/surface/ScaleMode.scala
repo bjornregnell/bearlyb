@@ -7,3 +7,6 @@ enum ScaleMode:
   case Linear
   /** Nearest pixel sampling with improved filtering for pixelart */
   case PixelArt
+
+object ScaleMode:
+  given ScaleMode = ScaleMode.Linear

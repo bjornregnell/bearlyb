@@ -23,10 +23,6 @@ case class Rect[T](x: T, y: T, w: T, h: T):
 
   def isEmpty: Boolean = ???
 
-  // convert to different ints
-  def toFloatRect: Rect[Float] = ???
-  def toIntRect: Rect[Int] = ???
-
 object Rect:
 
   def empty[T: Numeric as num ] =
@@ -42,6 +38,23 @@ object Rect:
 
 
   extension [T: Numeric](self: Rect[T])
+    // convert to different ints
+    def toFloatRect: Rect[Float] =
+      val Rect(x, y, w, h) = self
+      Rect(x.toFloat, y.toFloat, w.toFloat, h.toFloat)
+
+    def toDoubleRect: Rect[Double] =
+      val Rect(x, y, w, h) = self
+      Rect(x.toDouble, y.toDouble, w.toDouble, h.toDouble)
+
+    def toIntRect: Rect[Int] =
+      val Rect(x, y, w, h) = self
+      Rect(x.toInt, y.toInt, w.toInt, h.toInt)
+
+    def toLongRect: Rect[Long] = 
+      val Rect(x, y, w, h) = self
+      Rect(x.toLong, y.toLong, w.toLong, h.toLong)
+
     def equalsEpsilon(other: Rect[T], epsilon: T): Boolean =
       self == other ||
       (
@@ -57,22 +70,26 @@ object Rect:
   private[bearlyb] sealed trait InternalOps[T]:
     type Internal
 
-    extension (r: Rect[T])
-      def internal(stack: MemoryStack): Internal
+    extension (r: Rect[T] | Null)
+      def internal(stack: MemoryStack): Internal | Null
 
   given InternalOps[Int]:
     type Internal = SDL_Rect
-    extension (r: Rect[Int])
-      def internal(stack: MemoryStack): Internal =
-        val Rect(x, y, w, h) = r
-        SDL_Rect.malloc(stack).set(x, y, w, h)
+    extension (r: Rect[Int] | Null)
+      def internal(stack: MemoryStack): Internal | Null =
+        r match
+          case null => null
+          case Rect(x, y, w, h) =>
+            SDL_Rect.malloc(stack).set(x, y, w, h)
   
   given InternalOps[Float]:
     type Internal = SDL_FRect
-    extension (r: Rect[Float])
-      def internal(stack: MemoryStack): Internal =
-        val Rect(x, y, w, h) = r
-        SDL_FRect.malloc(stack).set(x, y, w, h)
+    extension (r: Rect[Float] | Null)
+      def internal(stack: MemoryStack): Internal | Null =
+        r match
+          case null => null
+          case Rect(x, y, w, h) =>
+            SDL_FRect.malloc(stack).set(x, y, w, h)
 
   opaque type Epsilon[T] = T
   object Epsilon:
