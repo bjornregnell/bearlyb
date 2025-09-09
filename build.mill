@@ -6,7 +6,7 @@ import coursier.MavenRepository
 import mill.api.Task.Simple
 
 trait BearlybModule extends ScalaModule:
-  final def scalaVersion: Simple[String] = "3.7.2"
+  final def scalaVersion = "3.7.2"
 
 object bearlyb extends LwjglModule:
 
@@ -15,6 +15,7 @@ object bearlyb extends LwjglModule:
     mvn"com.softwaremill.ox::core:0.5.13",
     mvn"io.github.iltotore::iron:3.0.1"
   )
+  def moduleDeps = Seq(`bearlyb-vectors`)
   def mvnDeps = super.mvnDeps() ++ deps
   def runMvnDeps = super.runMvnDeps()
   def scalacOptions = Seq(
@@ -32,6 +33,10 @@ object bearlyb extends LwjglModule:
     )
 
 end bearlyb
+
+object `bearlyb-vectors` extends BearlybModule:
+
+end `bearlyb-vectors`
 
 object playground extends LwjglModule:
   def mvnDeps = Seq(mvn"com.lihaoyi::os-lib:0.11.4") ++ lwjglDeps
