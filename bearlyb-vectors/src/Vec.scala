@@ -13,6 +13,12 @@ object Vec:
   export VecOps.given
   export swizzling.swizzle
   export swizzling.extensions as swizzleExtensions
+
+  def fill[A](size: Int)(elem: => A)(using ops: VecOps[Vec[A, size.type], A]) =
+    ops.fill(elem)
+
+  def zeroed[A: Numeric as num](size: Int)(using ops: VecOps[Vec[A, size.type], A]) =
+    ops.fill(num.zero)
   
   extension [T <: Tuple](tup: T)
     inline def x = tup(0)
@@ -26,17 +32,15 @@ object Vec:
     inline def a = tup.w 
   end extension
 
-  // extension [T: Numeric](a: Vec[T, 3])
-  //   def cross(b: Vec[T, 3]): Vec[T, 3] =
-  //     val i = a.swizzle[(1,2,0)] * b.swizzle[(2,0,1)]
-  //     val j = a.swizzle[(2,0,1)] * b.swizzle[(1,2,0)]
-  //     i - j
 end Vec
 
 /** Stuff you can only do with a [[Vec]]
   */
-sealed trait VecOps[Tup <: Tuple, +A] extends Dynamic:
+sealed trait VecOps[Tup <: Tuple, +A]:
   type Return[+T] <: Tuple
+
+  def fill[A1 >: A](elem: => A1): Return[A1]
+
   extension (tup: Tup)
 
     def vmap[B](f: A => B): Return[B]
@@ -92,6 +96,9 @@ object VecOps:
 
   given VecOps[EmptyTuple, Nothing] with
     type Return[+T] = EmptyTuple
+
+    def fill[A1 >: Nothing](elem: => A1): Return[A1] = EmptyTuple
+
     extension (tup: EmptyTuple)
       def vmap[B](f: Nothing => B): Return[B] = EmptyTuple
       def foreach[U](f: Nothing => U): Unit = ()
@@ -101,8 +108,11 @@ object VecOps:
       def foldRight[B](z: B)(op: (Nothing, B) => B): B = z
   end given
 
-  given [A, Tail <: Tuple, TailVecOps <: VecOps[Tail, A]](using tailVecOps: TailVecOps): VecOps[A *: Tail, A] with
+  given [A, Tail <: Tuple, TailVecOps <: VecOps[Tail, A]] => (tailVecOps: TailVecOps) => VecOps[A *: Tail, A]:
     type Return[+T] = T *: tailVecOps.Return[T]
+
+    def fill[A1 >: A](elem: => A1): Return[A1] = elem *: tailVecOps.fill(elem)
+
     extension (tup: A *: Tail)
       def vmap[B](f: A => B): Return[B] = 
         f(tup.head) *: tup.tail.vmap(f)

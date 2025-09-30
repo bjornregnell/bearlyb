@@ -1,3 +1,3 @@
 package bearlyb.rect
 
-type Point[T] = (x: T, y: T)
+type Point[T] = (T, T)

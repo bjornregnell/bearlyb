@@ -9,6 +9,7 @@ import bearlyb.*, pixels.{PixelFormat, Color}, rect.*
 import java.nio.ByteBuffer
 import scala.annotation.implicitNotFound
 import bearlyb.surface.Surface.RawColor
+import bearlyb.vectors.Vec.*
 import scala.math.Numeric.Implicits.infixNumericOps
 
 class Surface private (private[bearlyb] val internal: SDL_Surface, private val imageData: Option[ByteBuffer] = None):

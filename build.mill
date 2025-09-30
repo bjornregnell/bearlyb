@@ -97,7 +97,8 @@ trait LwjglModule extends BearlybModule:
   def runMvnDeps = runLwjglDeps
   def compileMvnDeps = compileLwjglDeps
   def repositories = Seq(
-    "https://oss.sonatype.org/content/repositories/snapshots/"
+    // "https://oss.sonatype.org/content/repositories/snapshots/"
+    "https://central.sonatype.com/repository/maven-snapshots"
   )
 
 end LwjglModule
