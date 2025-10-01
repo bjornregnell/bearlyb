@@ -21,10 +21,13 @@ object Rect:
   inline val CodeLeft   = 0b0100
   inline val CodeRight  = 0b1000
 
-  def empty[T: Numeric as num ] =
+  def empty[T: Numeric as num] =
     new Rect(num.zero, num.zero, num.zero, num.zero)
 
-  def enclosePoints[T: {Numeric as num, EnclosepointsEpsilon as encloseEps}](points: IterableOnce[Point[T]], clip: Rect[T] | Null = null): Rect[T] = boundary:
+  def enclosePoints[T: {Numeric as num, EnclosepointsEpsilon as encloseEps}](
+      points: IterableOnce[Point[T]],
+      clip: Rect[T] | Null = null
+    ): Rect[T] = boundary:
     import numext.infixNumericOps, ordext.infixOrderingOps
 
     val eps = encloseEps.value
@@ -43,34 +46,28 @@ object Rect:
             x < clipMinx || x > clipMaxx || y < clipMiny || y > clipMaxy
           )
         case clip: Rect[T] => break(clip)
-        case null =>
-          iter
+        case null          => iter
+      end match
     end pointIter
 
     var (minx, miny, maxx, maxy) =
       val p = pointIter.next()
       p.xyxy
 
-    for
-      (x, y) <- pointIter
-    do
-      if      x < minx then
-        minx = x
-      else if x > maxx then
-        maxx = x
-      
-      if      y < miny then
-        miny = y
-      else if y > maxy then
-        maxy = y
-    
+    for (x, y) <- pointIter do
+      if x < minx then minx = x else if x > maxx then maxx = x
+
+      if y < miny then miny = y else if y > maxy then maxy = y
+
     Rect(minx, miny, (maxx - minx) + eps, (maxy - miny) + eps)
 
-  def enclosePoints[T: {Numeric, EnclosepointsEpsilon}](points: Point[T]*): Rect[T] =
-    enclosePoints(points)
+  def enclosePoints[T: {Numeric, EnclosepointsEpsilon}](points: Point[T]*)
+      : Rect[T] = enclosePoints(points)
 
-  def enclosePoints[T: {Numeric, EnclosepointsEpsilon}](clip: Rect[T], points: Point[T]*): Rect[T] =
-    enclosePoints(points, clip)
+  def enclosePoints[T: {Numeric, EnclosepointsEpsilon}](
+      clip: Rect[T],
+      points: Point[T]*
+    ): Rect[T] = enclosePoints(points, clip)
 
   private[bearlyb] def fromInternal(rect: SDL_Rect): Rect[Int] =
     new Rect(rect.x(), rect.y(), rect.w(), rect.h())
@@ -102,7 +99,7 @@ object Rect:
       val Rect(x, y, w, h) = self
       Rect(x.toInt, y.toInt, w.toInt, h.toInt)
 
-    def toLongRect: Rect[Long] = 
+    def toLongRect: Rect[Long] =
       import numext.infixNumericOps
       val Rect(x, y, w, h) = self
       Rect(x.toLong, y.toLong, w.toLong, h.toLong)
@@ -110,44 +107,37 @@ object Rect:
     def equalsEpsilon(other: Rect[T], epsilon: T): Boolean =
       import numext.infixNumericOps, ordext.infixOrderingOps
       self == other ||
-      (
-        (self.x - other.x).abs <= epsilon &&
-        (self.y - other.y).abs <= epsilon &&
-        (self.w - other.w).abs <= epsilon &&
-        (self.h - other.h).abs <= epsilon
-      )
-    
-    def ~==(other: Rect[T])(using epsilon: CompareEpsilon[T]): Boolean =
-        self.equalsEpsilon(other, epsilon)
+      ((self.x - other.x).abs <= epsilon && (self.y - other.y).abs <= epsilon &&
+        (self.w - other.w).abs <= epsilon && (self.h - other.h).abs <= epsilon)
 
-    private inline def div(a: T, b: T): T =
-      inline num match
-        case frac: Fractional[T] => frac.div(a, b)
-        case inte: Integral[T] => inte.quot(a, b)
+    def ~==(other: Rect[T])(using epsilon: CompareEpsilon[T]): Boolean = self
+      .equalsEpsilon(other, epsilon)
 
-    def hasIntersection(other: Rect[T])(using EnclosepointsEpsilon[T]): Boolean =
-      !self.intersection(other).isEmpty
+    private inline def div(a: T, b: T): T = inline num match
+      case frac: Fractional[T] => frac.div(a, b)
+      case inte: Integral[T]   => inte.quot(a, b)
 
-    def intersection(other: Rect[T])(using encloseEps: EnclosepointsEpsilon[T]): Rect[T] =
+    def hasIntersection(other: Rect[T])(using EnclosepointsEpsilon[T])
+        : Boolean = !self.intersection(other).isEmpty
+
+    def intersection(other: Rect[T])(using encloseEps: EnclosepointsEpsilon[T])
+        : Rect[T] =
       import numext.infixNumericOps, ordext.infixOrderingOps
       boundary:
-        if self.isEmpty || other.isEmpty then
-          break(Rect.empty)
+        if self.isEmpty || other.isEmpty then break(Rect.empty)
 
         lazy val eps = encloseEps.value
 
-        lazy val x = self.x max other.x
+        lazy val x    = self.x max other.x
         lazy val xmax = self.xmax min other.xmax
-        lazy val w = xmax - x
-        if xmax - eps < x then
-          break(Rect.empty)
+        lazy val w    = xmax - x
+        if xmax - eps < x then break(Rect.empty)
 
-        lazy val y = self.y max other.y
+        lazy val y    = self.y max other.y
         lazy val ymax = self.ymax min other.ymax
-        lazy val h = ymax - y
-        if ymax - eps < y then
-          break(Rect.empty)
-        
+        lazy val h    = ymax - y
+        if ymax - eps < y then break(Rect.empty)
+
         Rect(x, y, w, h)
     end intersection
 
@@ -155,107 +145,110 @@ object Rect:
       import numext.infixNumericOps, ordext.infixOrderingOps
 
       (self.isEmpty, other.isEmpty) match
-        case (true, true) => Rect.empty
-        case (true, false) => other
-        case (false, true) => self
-        case (false, false) => 
+        case (true, true)   => Rect.empty
+        case (true, false)  => other
+        case (false, true)  => self
+        case (false, false) =>
           // horizontal union
-          val x = self.x min other.x
+          val x    = self.x min other.x
           val xmax = self.xmax max other.xmax
-          val w = xmax - x
+          val w    = xmax - x
 
           // vertical union
-          val y = self.y min other.y
+          val y    = self.y min other.y
           val ymax = self.ymax max other.ymax
-          val h = ymax - y
+          val h    = ymax - y
 
           Rect(x, y, w, h)
+      end match
     end union
 
   end extension
 
   extension [T: ([t] =>> Fractional[t] | Integral[t]) as num](a: T)
-    inline def /(b: T): T =
-      inline num match
-        case frac: Fractional[T] => frac.div(a, b)
-        case inte: Integral[T] => inte.quot(a, b)
 
-  extension [T: {([t] =>> Fractional[t] | Integral[t]) as num, EnclosepointsEpsilon as encloseEps}](self: Rect[T])
-    def intersection(x1: T, y1: T, x2: T, y2: T): Option[(near: Point[T], far: Point[T])] =
+    inline def /(b: T): T = inline num match
+      case frac: Fractional[T] => frac.div(a, b)
+      case inte: Integral[T]   => inte.quot(a, b)
+
+  extension [
+      T: {([t] =>> Fractional[t] | Integral[t]) as num,
+        EnclosepointsEpsilon as encloseEps}
+    ](
+      self: Rect[T]
+    )
+
+    def intersection(x1: T, y1: T, x2: T, y2: T)
+        : Option[(near: Point[T], far: Point[T])] =
       import numext.infixNumericOps, ordext.infixOrderingOps
 
       val eps = encloseEps.value
 
-      def div(a: T, b: T): T =
-        num match
-          case frac: Fractional[T] => frac.div(a, b)
-          case inte: Integral[T] => inte.quot(a, b)
+      def div(a: T, b: T): T = num match
+        case frac: Fractional[T] => frac.div(a, b)
+        case inte: Integral[T]   => inte.quot(a, b)
 
       def computeOutcode(x: T, y: T): Int =
         var code = 0
-        
-        if y < self.y then
-          code |= CodeTop
-        else if y > (self.y + self.h - eps) then
-          code |= CodeBottom
-        
-        if x < self.x then
-          code |= CodeLeft
-        else if x > (self.x + self.w - eps) then
-          code |= CodeRight
-        
+
+        if y < self.y then code |= CodeTop
+        else if y > (self.y + self.h - eps) then code |= CodeBottom
+
+        if x < self.x then code |= CodeLeft
+        else if x > (self.x + self.w - eps) then code |= CodeRight
+
         code
       end computeOutcode
 
-      inline def breakPoints(x1: T, y1: T, x2: T, y2: T)(using Label[Option[(near: Point[T], far: Point[T])]]) =
-        break(Some((x1, y1), (x2, y2)))
+      inline def breakPoints(
+          x1: T,
+          y1: T,
+          x2: T,
+          y2: T
+        )(using Label[Option[(near: Point[T], far: Point[T])]]
+        ) = break(Some((x1, y1), (x2, y2)))
 
       boundary:
         if self.isEmpty then break(None)
 
         val (rectx1, recty1) = (self.x, self.y)
-        val rectx2 = self.x + self.w - eps
-        val recty2 = self.y + self.h - eps
+        val rectx2           = self.x + self.w - eps
+        val recty2           = self.y + self.h - eps
 
         // Check to see if entire line is inside rect
-        if x1 >= rectx1 && x1 <= rectx2 && x2 >= rectx1 && x2 <= rectx2 && y1 >= recty1 && y1 <= recty2 && y2 >= recty1 && y2 <= recty2 then
-          breakPoints(x1, y1, x2, y2)
+        if x1 >= rectx1 && x1 <= rectx2 && x2 >= rectx1 && x2 <= rectx2 &&
+          y1 >= recty1 && y1 <= recty2 && y2 >= recty1 && y2 <= recty2
+        then breakPoints(x1, y1, x2, y2)
 
         // check to see if entire line is to one side of rect
-        if (x1 < rectx1 && x2 < rectx1) || (x1 > rectx2 && x2 > rectx2) || (y1 < recty1 && y2 < recty1) || (y1 > recty2 && y2 > recty2) then
-          break(None)
+        if (x1 < rectx1 && x2 < rectx1) ||
+          (x1 > rectx2 && x2 > rectx2) ||
+          (y1 < recty1 && y2 < recty1) ||
+          (y1 > recty2 && y2 > recty2)
+        then break(None)
 
         if y1 == y2 then // horizontal line, easy to clip
-          val x1New = 
-            if x1 < rectx1 then rectx1
-            else if x1 > rectx2 then rectx2
-            else x1
-          val x2New = 
-            if x2 < rectx1 then rectx1
-            else if x2 > rectx2 then rectx2
-            else x2
+          val x1New =
+            if x1 < rectx1 then rectx1 else if x1 > rectx2 then rectx2 else x1
+          val x2New =
+            if x2 < rectx1 then rectx1 else if x2 > rectx2 then rectx2 else x2
           breakPoints(x1New, y1, x2New, y2)
 
         if x1 == x2 then // vertical line, easy to clip
-          val y1New = 
-            if y1 < recty1 then recty1
-            else if y1 > recty2 then recty2
-            else y1
-          val y2New = 
-            if y2 < recty1 then recty1
-            else if y2 > recty2 then recty2
-            else y2
+          val y1New =
+            if y1 < recty1 then recty1 else if y1 > recty2 then recty2 else y1
+          val y2New =
+            if y2 < recty1 then recty1 else if y2 > recty2 then recty2 else y2
           breakPoints(x1, y1New, x2, y2New)
 
         // More complicated Cohen-Sutherland algorithm
         var (x1tmp, y1tmp, x2tmp, y2tmp) = (x1, y1, x2, y2)
-        var (x: T, y: T) = (num.zero, num.zero)
-        var outcode1 = computeOutcode(x1, x2)
-        var outcode2 = computeOutcode(x2, y2)
+        var (x: T, y: T)                 = (num.zero, num.zero)
+        var outcode1                     = computeOutcode(x1, x2)
+        var outcode2                     = computeOutcode(x2, y2)
         while (outcode1 != 0) || (outcode2 != 0) do
-          if (outcode1 & outcode2) != 0 then
-            break(None)
-          
+          if (outcode1 & outcode2) != 0 then break(None)
+
           if outcode1 != 0 then
             if (outcode1 & CodeTop) != 0 then
               y = recty1
@@ -269,7 +262,8 @@ object Rect:
             else if (outcode1 & CodeRight) != 0 then
               x = rectx2
               y = (y1tmp + div((y2tmp - y1tmp) * (x - x1tmp), x2tmp - x1tmp))
-              
+            end if
+
             x1tmp = x
             y1tmp = y
             outcode1 = computeOutcode(x, y)
@@ -290,7 +284,8 @@ object Rect:
               assert(x2tmp != x1tmp)
               x = rectx2
               y = (y1tmp + div((y2tmp - y1tmp) * (x - x1tmp), x2tmp - x1tmp))
-              
+            end if
+
             x2tmp = x
             y2tmp = y
             outcode2 = computeOutcode(x, y)
@@ -301,7 +296,9 @@ object Rect:
 
     end intersection
 
-  private[bearlyb] sealed trait InternalOps[T]:
+  end extension
+
+  sealed private[bearlyb] trait InternalOps[T]:
     type Internal
 
     extension (r: Rect[T] | Null)
@@ -309,41 +306,51 @@ object Rect:
 
   given InternalOps[Int]:
     type Internal = SDL_Rect
+
     extension (r: Rect[Int] | Null)
-      def internal(stack: MemoryStack): Internal | Null =
-        r match
-          case null => null
-          case Rect(x, y, w, h) =>
-            SDL_Rect.malloc(stack).set(x, y, w, h)
-  
+
+      def internal(stack: MemoryStack): Internal | Null = r match
+        case null             => null
+        case Rect(x, y, w, h) => SDL_Rect.malloc(stack).set(x, y, w, h)
+
+  end given
+
   given InternalOps[Float]:
     type Internal = SDL_FRect
+
     extension (r: Rect[Float] | Null)
-      def internal(stack: MemoryStack): Internal | Null =
-        r match
-          case null => null
-          case Rect(x, y, w, h) =>
-            SDL_FRect.malloc(stack).set(x, y, w, h)
+
+      def internal(stack: MemoryStack): Internal | Null = r match
+        case null             => null
+        case Rect(x, y, w, h) => SDL_FRect.malloc(stack).set(x, y, w, h)
+
+  end given
 
   opaque type CompareEpsilon[T] = T
-  object CompareEpsilon:
-    extension [T](ep: CompareEpsilon[T])
-      def value: T = ep
 
-    def apply[T](value: T): CompareEpsilon[T] = value
+  object CompareEpsilon:
+    extension [T](ep: CompareEpsilon[T]) def value: T = ep
+
+    def apply[T](value: T): CompareEpsilon[T]     = value
     def unapply[T](wrapped: CompareEpsilon[T]): T = wrapped
 
-    given CompareEpsilon[Float] = 1.1920928955078125e-07f
+    given CompareEpsilon[Float]  = 1.1920928955078125e-07f
     given CompareEpsilon[Double] = 1.1920928955078125e-07d
 
+  end CompareEpsilon
+
   opaque type EnclosepointsEpsilon[T] = T
+
   object EnclosepointsEpsilon:
-    extension [T](ep: EnclosepointsEpsilon[T])
-      def value: T = ep
-    
+
+    extension [T](ep: EnclosepointsEpsilon[T]) def value: T = ep
+
     def apply[T](value: T): EnclosepointsEpsilon[T] = value
 
     inline given [T: Integral as inte] => EnclosepointsEpsilon[T] = inte.one
+
     inline given [T: Fractional as frac] => EnclosepointsEpsilon[T] = frac.zero
+
+  end EnclosepointsEpsilon
 
 end Rect

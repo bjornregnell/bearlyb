@@ -1,5 +1,4 @@
 //| mill-version: 1.0.4
-//| mill-jvm-version: 21
 
 import mill.*, scalalib.*
 import coursier.MavenRepository

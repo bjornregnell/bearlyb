@@ -12,4 +12,3 @@ class property extends ScalaCheckSuite:
       n + 0 == n
 
 end property
-
