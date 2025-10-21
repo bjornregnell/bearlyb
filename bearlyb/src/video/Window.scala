@@ -7,79 +7,79 @@ import bearlyb.*
 import render.Renderer
 import bearlyb.surface.Surface
 
-class Window private (
-    private[bearlyb] val pWindow: Long,
+class Window private[bearlyb] (
+    private[bearlyb] val internal: Long,
     private var windowShape: Option[Surface] = None):
-  def title: String = SDL_GetWindowTitle(pWindow)
+  def title: String = SDL_GetWindowTitle(internal)
 
-  def title_=(title: String): Unit = SDL_SetWindowTitle(pWindow, title)
+  def title_=(title: String): Unit = SDL_SetWindowTitle(internal, title)
     .sdlErrorCheck()
 
   def position: (x: Int, y: Int) = Using(stackPush()): stack =>
     val px = stack.mallocInt(1)
     val py = stack.mallocInt(1)
-    SDL_GetWindowPosition(pWindow, px, py).sdlErrorCheck()
+    SDL_GetWindowPosition(internal, px, py).sdlErrorCheck()
     (px.get(0), py.get(0))
   .get
 
   def position_=(pos: (x: Int, y: Int)): Unit =
     val (width, height) = pos
-    SDL_SetWindowPosition(pWindow, width, height).sdlErrorCheck()
+    SDL_SetWindowPosition(internal, width, height).sdlErrorCheck()
 
   def size: (width: Int, height: Int) = Using(stackPush()): stack =>
     val pWidth  = stack.mallocInt(1)
     val pHeight = stack.mallocInt(1)
-    SDL_GetWindowSize(pWindow, pWidth, pHeight)
+    SDL_GetWindowSize(internal, pWidth, pHeight)
       .sdlErrorCheck((pWidth.get(0), pHeight.get(0)))
   .get
 
   def size_=(dim: (width: Int, height: Int)): Unit =
     val (width, height) = dim
-    SDL_SetWindowSize(pWindow, width, height).sdlErrorCheck()
+    SDL_SetWindowSize(internal, width, height).sdlErrorCheck()
 
   def sizeInPixels: (width: Int, height: Int) = Using(stackPush()): stack =>
     val pWidth  = stack.mallocInt(1)
     val pHeight = stack.mallocInt(1)
-    SDL_GetWindowSizeInPixels(pWindow, pWidth, pHeight)
+    SDL_GetWindowSizeInPixels(internal, pWidth, pHeight)
       .sdlErrorCheck((pWidth.get(0), pHeight.get(0)))
   .get
 
-  def id: WindowID = SDL_GetWindowID(pWindow) match
+  def id: WindowID = SDL_GetWindowID(internal) match
     case 0  => sdlError()
     case id => id
 
-  def icon_=(icon: Surface): Unit = SDL_SetWindowIcon(pWindow, icon.internal)
+  def icon_=(icon: Surface): Unit = SDL_SetWindowIcon(internal, icon.internal)
     .sdlErrorCheck()
 
   def bordered: Boolean =
-    (SDL_GetWindowFlags(pWindow) & SDL_WINDOW_BORDERLESS) == 0
+    (SDL_GetWindowFlags(internal) & SDL_WINDOW_BORDERLESS) == 0
 
   def bordered_=(bordered: Boolean): Unit =
-    SDL_SetWindowBordered(pWindow, bordered).sdlErrorCheck()
+    SDL_SetWindowBordered(internal, bordered).sdlErrorCheck()
 
   def resizable: Boolean =
-    (SDL_GetWindowFlags(pWindow) & SDL_WINDOW_RESIZABLE) == 0
+    (SDL_GetWindowFlags(internal) & SDL_WINDOW_RESIZABLE) == 0
 
   def resizable_=(resizable: Boolean): Unit =
-    SDL_SetWindowResizable(pWindow, resizable).sdlErrorCheck()
+    SDL_SetWindowResizable(internal, resizable).sdlErrorCheck()
 
   def alwaysOnTop: Boolean =
-    (SDL_GetWindowFlags(pWindow) & SDL_WINDOW_ALWAYS_ON_TOP) == 0
+    (SDL_GetWindowFlags(internal) & SDL_WINDOW_ALWAYS_ON_TOP) == 0
 
   def alwaysOnTop_=(alwaysOnTop: Boolean): Unit =
-    SDL_SetWindowAlwaysOnTop(pWindow, alwaysOnTop).sdlErrorCheck()
+    SDL_SetWindowAlwaysOnTop(internal, alwaysOnTop).sdlErrorCheck()
 
   def fullscreenMode: Option[DisplayMode] =
-    Option(SDL_GetWindowFullscreenMode(pWindow)).map(DisplayMode.fromInternal)
+    Option(SDL_GetWindowFullscreenMode(internal)).map(DisplayMode.fromInternal)
 
   def fullscreenMode_=(mode: DisplayMode): Unit =
-    SDL_SetWindowFullscreenMode(pWindow, mode.internal).sdlErrorCheck()
+    SDL_SetWindowFullscreenMode(internal, mode.internal).sdlErrorCheck()
 
   def fullscreen: Boolean =
-    (SDL_GetWindowFlags(pWindow) & SDL_WINDOW_FULLSCREEN) == 0
+    (SDL_GetWindowFlags(internal) & SDL_WINDOW_FULLSCREEN) == 0
 
   def fullscreen_=(fullscreen: Boolean): Unit =
-    SDL_SetWindowFullscreen(pWindow, fullscreen).sdlErrorCheck()
+    SDL_SetWindowFullscreen(internal, fullscreen).sdlErrorCheck()
 
   def popup(
       xOffset: Int,
@@ -89,7 +89,7 @@ class Window private (
       flags: Window.Flag*
     ): Window = new Window(
     SDL_CreatePopupWindow(
-      pWindow, xOffset, yOffset, width, height,
+      internal, xOffset, yOffset, width, height,
       SDL_WINDOW_POPUP_MENU | flags.combine
     ).sdlCreationCheck()
   )
@@ -102,21 +102,22 @@ class Window private (
       flags: Window.Flag*
     ): Window = new Window(
     SDL_CreatePopupWindow(
-      pWindow, xOffset, yOffset, width, height,
+      internal, xOffset, yOffset, width, height,
       SDL_WINDOW_TOOLTIP | flags.combine
     )
   )
 
   def renderer: Renderer = Renderer(this)
 
-  def surface: Surface = Surface.fromInternal(SDL_GetWindowSurface(pWindow))
+  def surface: Surface = Surface.fromInternal(SDL_GetWindowSurface(internal))
 
-  def presentSurface(): Unit = SDL_UpdateWindowSurface(pWindow).sdlErrorCheck()
+  def presentSurface(): Unit = SDL_UpdateWindowSurface(internal).sdlErrorCheck()
 
-  def destroySurface(): Unit = SDL_DestroyWindowSurface(pWindow).sdlErrorCheck()
+  def destroySurface(): Unit = SDL_DestroyWindowSurface(internal)
+    .sdlErrorCheck()
 
   def destroy(): Unit =
-    SDL_DestroyWindow(pWindow)
+    SDL_DestroyWindow(internal)
     windowShape match
       case Some(surf) => surf.destroy()
       case None       => ()
@@ -125,32 +126,32 @@ class Window private (
     Using(stackPush()): stack =>
       val minAspect = stack.mallocFloat(1)
       val maxAspect = stack.mallocFloat(1)
-      SDL_GetWindowAspectRatio(pWindow, minAspect, maxAspect).sdlErrorCheck()
+      SDL_GetWindowAspectRatio(internal, minAspect, maxAspect).sdlErrorCheck()
       (minAspect.get(0), maxAspect.get(0))
     .get
 
   def aspectRatio_=(aspectRatios: (minAspect: Float, maxAspect: Float)): Unit =
     val (minAspect, maxAspect) = aspectRatios
-    SDL_SetWindowAspectRatio(pWindow, minAspect, maxAspect).sdlErrorCheck()
+    SDL_SetWindowAspectRatio(internal, minAspect, maxAspect).sdlErrorCheck()
 
   def flash(operation: FlashOperation): Unit =
-    SDL_FlashWindow(pWindow, operation.internal).sdlErrorCheck()
+    SDL_FlashWindow(internal, operation.internal).sdlErrorCheck()
 
-  def getDisplay: DisplayID = SDL_GetDisplayForWindow(pWindow)
+  def getDisplay: DisplayID = SDL_GetDisplayForWindow(internal)
 
   def vsync: Int = Using(stackPush()): stack =>
     val psync = stack.mallocInt(1)
-    SDL_GetWindowSurfaceVSync(pWindow, psync).sdlErrorCheck(psync.get(0))
+    SDL_GetWindowSurfaceVSync(internal, psync).sdlErrorCheck(psync.get(0))
   .get
 
   def vsync_=(syncInterval: Int): Unit =
-    SDL_SetWindowSurfaceVSync(pWindow, syncInterval).sdlErrorCheck()
+    SDL_SetWindowSurfaceVSync(internal, syncInterval).sdlErrorCheck()
 
   def shape: Option[Surface] = this.windowShape
 
   def shape_=(mask: Option[Surface]): Unit =
     SDL_SetWindowShape(
-      pWindow,
+      internal,
       mask match
         case Some(value) => value.internal
         case None        => null
@@ -159,41 +160,41 @@ class Window private (
 
   end shape_=
 
-  def opacity: Float = SDL_GetWindowOpacity(pWindow) match
+  def opacity: Float = SDL_GetWindowOpacity(internal) match
     case -1.0f => sdlError()
     case o     => o
 
-  def opacity_=(opacity: Float): Unit = SDL_SetWindowOpacity(pWindow, opacity)
+  def opacity_=(opacity: Float): Unit = SDL_SetWindowOpacity(internal, opacity)
     .sdlErrorCheck()
 
-  def mouseGrabbed: Boolean = SDL_GetWindowMouseGrab(pWindow)
+  def mouseGrabbed: Boolean = SDL_GetWindowMouseGrab(internal)
 
   def mouseGrabbed_=(grabbed: Boolean): Unit =
-    SDL_SetWindowMouseGrab(pWindow, grabbed).sdlErrorCheck()
+    SDL_SetWindowMouseGrab(internal, grabbed).sdlErrorCheck()
 
-  def keyboardGrabbed: Boolean = SDL_GetWindowKeyboardGrab(pWindow)
+  def keyboardGrabbed: Boolean = SDL_GetWindowKeyboardGrab(internal)
 
   def keyboardGrabbed_=(grabbed: Boolean): Unit =
-    SDL_SetWindowKeyboardGrab(pWindow, grabbed).sdlErrorCheck()
+    SDL_SetWindowKeyboardGrab(internal, grabbed).sdlErrorCheck()
 
   def flags: Set[Window.Flag] =
-    val flags = SDL_GetWindowFlags(pWindow)
+    val flags = SDL_GetWindowFlags(internal)
     Set.from(
       Window.Flag.values.iterator.filter(flag => (flag.internal & flags) != 0)
     )
 
-  def show(): Unit = SDL_ShowWindow(pWindow).sdlErrorCheck()
-  def hide(): Unit = SDL_HideWindow(pWindow).sdlErrorCheck()
+  def show(): Unit = SDL_ShowWindow(internal).sdlErrorCheck()
+  def hide(): Unit = SDL_HideWindow(internal).sdlErrorCheck()
 
-  def raise(): Unit = SDL_RaiseWindow(pWindow).sdlErrorCheck()
+  def raise(): Unit = SDL_RaiseWindow(internal).sdlErrorCheck()
 
-  def maximize(): Unit = SDL_MaximizeWindow(pWindow).sdlErrorCheck()
+  def maximize(): Unit = SDL_MaximizeWindow(internal).sdlErrorCheck()
 
-  def minimize(): Unit = SDL_MinimizeWindow(pWindow).sdlErrorCheck()
+  def minimize(): Unit = SDL_MinimizeWindow(internal).sdlErrorCheck()
 
-  def restore(): Unit = SDL_RestoreWindow(pWindow).sdlErrorCheck()
+  def restore(): Unit = SDL_RestoreWindow(internal).sdlErrorCheck()
 
-  def sync(): Unit = SDL_SyncWindow(pWindow).sdlErrorCheck()
+  def sync(): Unit = SDL_SyncWindow(internal).sdlErrorCheck()
 
 end Window
 
@@ -215,7 +216,7 @@ object Window:
         case str: String   => SDL_SetStringProperty(id, prop.name, str)
         case nbr: Long     => SDL_SetNumberProperty(id, prop.name, nbr)
         case flt: Float    => SDL_SetFloatProperty(id, prop.name, flt)
-        case win: Window   => SDL_SetPointerProperty(id, prop.name, win.pWindow)
+        case win: Window => SDL_SetPointerProperty(id, prop.name, win.internal)
 
     new Window(SDL_CreateWindowWithProperties(id).sdlCreationCheck())
 

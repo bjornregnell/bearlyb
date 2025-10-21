@@ -1,27 +1,16 @@
 package bearlyb.pixels
 
-import scala.math.Numeric.Implicits.infixNumericOps
 import org.lwjgl.sdl.SDL_Color
 import org.lwjgl.system.MemoryStack
+import bearlyb.vectors.Vec.given
 
-type Color[T] = (r: T, g: T, b: T, a: T)
+type Color  = (r: Int, g: Int, b: Int, a: Int)
+type FColor = (r: Float, g: Float, b: Float, a: Float)
 
 object Color:
 
-  extension [T: Numeric](c: Color[T])
-
-    def toIntColor: Color[Int] =
-      val (r, g, b, a) = c
-      (r.toInt, g.toInt, b.toInt, a.toInt)
-
-    def toByteColor: Color[Byte] =
-      val (r, g, b, a) = c.toIntColor
-      (r.toByte, g.toByte, b.toByte, a.toByte)
+  extension (c: Color)
 
     private[bearlyb] def internal(stack: MemoryStack): SDL_Color =
-      val (r, g, b, a) = c.toByteColor
+      val (r, g, b, a) = c.toTuple.vmap(_.toByte)
       SDL_Color.malloc(stack).set(r, g, b, a)
-
-  end extension
-
-end Color

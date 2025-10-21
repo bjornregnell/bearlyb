@@ -9,6 +9,7 @@ import Numeric.Implicits as numext
 import Ordering.Implicits as ordext
 import scala.util.boundary.Label
 import bearlyb.vectors.Vec, Vec.swizzleExtensions.xyxy
+import scala.annotation.targetName
 // import MemoryStack.*
 
 case class Rect[T](x: T, y: T, w: T, h: T)
@@ -74,6 +75,18 @@ object Rect:
 
   private[bearlyb] def fromInternal(rect: SDL_FRect): Rect[Float] =
     new Rect(rect.x(), rect.y(), rect.w(), rect.h())
+
+  extension [T: Numeric as num](self: Rect[T] | Null)
+
+    @targetName("nullableToFloatRect")
+    private[bearlyb] def toFloatRect: Rect[Float] | Null = self match
+      case null       => null
+      case r: Rect[T] => r.toFloatRect
+
+    private[bearlyb] def floatInternal(stack: MemoryStack) = self.toFloatRect
+      .internal(stack)
+
+  end extension
 
   extension [T: Numeric as num](self: Rect[T])
     def xmax = num.plus(self.x, self.w)

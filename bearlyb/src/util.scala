@@ -7,8 +7,8 @@ import java.nio.{ByteBuffer, IntBuffer, LongBuffer, FloatBuffer, DoubleBuffer}
 
 private[bearlyb] inline val NullPtr = org.lwjgl.system.MemoryUtil.NULL
 
-private[bearlyb] def sdlError(): Nothing = sys
-  .error(Console.RED + s"SDL Error: ${SDL_GetError()}")
+private[bearlyb] def sdlError(): Nothing =
+  throw BearlybException(s"SDL Error: ${SDL_GetError()}")
 
 extension (success: Boolean)
 

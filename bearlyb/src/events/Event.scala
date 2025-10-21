@@ -31,7 +31,7 @@ trait Event:
 
 object Event:
 
-  def poll: Iterator[Event] = new Iterator[Event]:
+  def pollEvents: Iterator[Event] = new Iterator[Event]:
     private var eventBuffer: Option[SDL_Event] = pollEvent
 
     private def pollEvent: Option[SDL_Event] = Using(stackPush()): stack =>
@@ -50,7 +50,7 @@ object Event:
         throw ju.NoSuchElementException("No more events to handle")
 
     override def hasNext: Boolean = eventBuffer.nonEmpty
-  end poll
+  end pollEvents
 
   private[bearlyb] def fromInternal(internal: SDL_Event): Event =
     internal.`type`() match

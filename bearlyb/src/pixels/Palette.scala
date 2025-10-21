@@ -7,7 +7,7 @@ import org.lwjgl.sdl.SDL_Color
 import org.lwjgl.sdl.SDLPixels.*
 import bearlyb.pixels.Color.*
 
-case class Palette[T: Numeric](colors: Color[T]*):
+case class Palette(colors: Color*):
 
   private[bearlyb] def internal: SDL_Palette = Using(stackPush()): stack =>
     val palette   = SDL_CreatePalette(colors.size)

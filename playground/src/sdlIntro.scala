@@ -19,7 +19,15 @@ end createWindow
 
 @main
 def main(): Unit =
-  SDL_SetHint(SDL_HINT_VIDEO_DRIVER, "wayland")
+  // SDL_SetHint(SDL_HINT_VIDEO_DRIVER, "wayland")
+  // SDL_SetHint(SDL_HINT_RENDER_DRIVER, "gpu")
+
+  val n = SDL_GetNumVideoDrivers()
+  for i <- 0 until n do println(SDL_GetVideoDriver(i))
+
+  // val m = SDL_GetNumVideoDrivers()
+  // for i <- 0 until m do
+  //   println(SDL_GetVideoDriver(i))
 
   if !SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS) then
     Console.err.println(s"Failed to initialize SDL: ${SDL_GetError()}")
@@ -28,15 +36,19 @@ def main(): Unit =
   Using.resources(stackPush(), SDL_Event.create()): (stack, event) =>
     val windowPtr   = stack.mallocPointer(1)
     val rendererPtr = stack.mallocPointer(1)
-    SDL_CreateWindowAndRenderer(
-      "Hello sdl!", 640, 480, 0, windowPtr, rendererPtr
-    )
-    val window    = windowPtr.get(0)
-    val renderer  = rendererPtr.get(0)
+    if !SDL_CreateWindowAndRenderer(
+        "Hello sdl!", 640, 480, SDL_WINDOW_RESIZABLE, windowPtr, rendererPtr
+      )
+    then
+      println(SDL_GetError())
+      sys.exit()
+    val window   = windowPtr.get(0)
+    val renderer = rendererPtr.get(0)
+    println(s"$window $renderer")
     var shouldRun = true
     while shouldRun do
       while SDL_PollEvent(event) do
-        if event.`type`() == SDL_EVENT_QUIT then shouldRun = false
+        if event.`type` == SDL_EVENT_QUIT then shouldRun = false
 
       SDL_SetRenderDrawColorFloat(
         renderer, 1.0, 0.0, 0.0, SDL_ALPHA_OPAQUE_FLOAT

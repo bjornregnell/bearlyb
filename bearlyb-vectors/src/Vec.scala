@@ -1,6 +1,5 @@
 package bearlyb.vectors
 
-import scala.language.dynamics
 import scala.compiletime.ops.int.S
 
 /** Represents a tuple containing only a single type For example `Vec[Int, 3]` =
