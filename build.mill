@@ -37,6 +37,9 @@ object `bearlyb-vectors` extends BearlybModule:
 
 end `bearlyb-vectors`
 
+object examples extends BearlybModule:
+  def moduleDeps = Seq(bearlyb)
+
 object playground extends LwjglModule:
   def mvnDeps = Seq(mvn"com.lihaoyi::os-lib:0.11.4") ++ lwjglDeps
   def moduleDeps = Seq(bearlyb)

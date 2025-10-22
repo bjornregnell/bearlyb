@@ -48,7 +48,9 @@ def main(): Unit =
     var shouldRun = true
     while shouldRun do
       while SDL_PollEvent(event) do
-        if event.`type` == SDL_EVENT_QUIT then shouldRun = false
+        event.`type` match
+          case SDL_EVENT_QUIT | SDL_EVENT_KEY_DOWN => shouldRun = false
+          case _ => ()
 
       SDL_SetRenderDrawColorFloat(
         renderer, 1.0, 0.0, 0.0, SDL_ALPHA_OPAQUE_FLOAT
