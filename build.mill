@@ -11,7 +11,7 @@ trait BearlybModule extends ScalaModule:
   final def scalaVersion = "3.7.2"
 
 object bearlyb extends LwjglModule, PublishModule:
-  def publishVersion = "0.1.1"
+  def publishVersion = "0.1.2"
 
   def pomSettings = PomSettings(
     description = "A scala game library",
