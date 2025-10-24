@@ -5,3 +5,4 @@ out
 .bsp
 .idea
 .scala-build
+publish-env.sh

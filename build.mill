@@ -1,13 +1,26 @@
 //| mill-version: 1.0.4
 
-import mill.*, scalalib.*
+import mill.*, scalalib.*, publish.*
 import coursier.MavenRepository
 import mill.api.Task.Simple
+import mill.util.Jvm
+import mill.util.JarManifest
+import os.SubPath
 
 trait BearlybModule extends ScalaModule:
   final def scalaVersion = "3.7.2"
 
-object bearlyb extends LwjglModule:
+object bearlyb extends LwjglModule, PublishModule:
+  def publishVersion = "0.1.1"
+
+  def pomSettings = PomSettings(
+    description = "A scala game library",
+    organization = "io.github.lego-eden",
+    url = "https://github.com/lego-eden/bearlyb",
+    licenses = Seq(License.MIT),
+    versionControl = VersionControl.github("lego-eden", "bearlyb"),
+    developers = Seq(Developer("lego-eden", "Hampus Edén", "https://github.com/lego-eden"))
+  )
 
   val deps = Seq(
     mvn"com.lihaoyi::os-lib:0.11.4",
@@ -25,7 +38,20 @@ object bearlyb extends LwjglModule:
     "-new-syntax"
   )
 
-  object test extends ScalaTests with TestModule.Munit:
+  def bearlybPublishAssembly = Task:
+    val base = lwjglAssembly()
+    Assembly.create(
+      destJar = Task.dest/"out.jar",
+      inputPaths = localClasspath().map(_.path),
+      manifest = JarManifest.MillDefault.add("Scala-Version" -> scalaVersion()),
+      base = Some(base),
+    )
+  
+  def jar = Task:
+    val jar = bearlybPublishAssembly()
+    jar.pathRef
+
+  object test extends ScalaTests, TestModule.Munit:
     def mvnDeps = Seq(
       mvn"org.scalameta::munit:1.0.4",
       mvn"org.scalameta::munit-scalacheck:1.1.0"
@@ -33,7 +59,17 @@ object bearlyb extends LwjglModule:
 
 end bearlyb
 
-object `bearlyb-vectors` extends BearlybModule:
+object `bearlyb-vectors` extends BearlybModule, PublishModule:
+  def publishVersion = "0.1.1"
+
+  def pomSettings = PomSettings(
+    description = "A library to treat tuples as collections and mathematical vectors",
+    organization = "io.github.lego-eden",
+    url = "https://github.com/lego-eden/bearlyb",
+    licenses = Seq(License.MIT),
+    versionControl = VersionControl.github("lego-eden", "bearlyb"),
+    developers = Seq(Developer("lego-eden", "Hampus Edén", "https://github.com/lego-eden"))
+  )
 
 end `bearlyb-vectors`
 
@@ -41,7 +77,7 @@ object examples extends BearlybModule:
   def moduleDeps = Seq(bearlyb)
 
 object playground extends LwjglModule:
-  def mvnDeps = Seq(mvn"com.lihaoyi::os-lib:0.11.4") ++ lwjglDeps
+  def mvnDeps = Seq(mvn"com.lihaoyi::os-lib:0.11.4")
   def moduleDeps = Seq(bearlyb)
 
 trait LwjglModule extends BearlybModule:
@@ -80,24 +116,42 @@ trait LwjglModule extends BearlybModule:
 
   def lwjglDep(lib: String): Dep = lwjglDep(lib, None)
 
-  val lwjglDeps = lwjglLibs.map(lwjglDep)
+  def lwjglDeps = Task:
+    lwjglLibs.map(lwjglDep)
 
-  val compileLwjglDeps = lwjglLibs.map(lwjglSource) ++ lwjglLibs.map(lwjglDocs)
+  def compileLwjglDeps = Task:
+    lwjglLibs.map(lwjglSource) ++ lwjglLibs.map(lwjglDocs)
 
-  val runLwjglDeps =
+  def runLwjglDeps = Task:
     for
       dep <- lwjglLibs
       native <- lwjglNatives
     yield lwjglDep(dep, Some(native))
+
+  final def resolvedLwjglDeps = Task:
+    millResolver().classpath(
+      deps = lwjglDeps() ++ runLwjglDeps() ++ compileLwjglDeps(),
+      sources = false,
+      artifactTypes = Some(artifactTypes()),
+    )
+
+  def lwjglAssembly = Task:
+    Assembly.create(
+      destJar = Task.dest/"out.jar",
+      inputPaths = resolvedLwjglDeps().map(_.path),
+      manifest = JarManifest.MillDefault.add("Scala-Version" -> scalaVersion()),
+      // shader = AssemblyModule.jarjarabramsWorker()
+    )
+
+  // def compileMvnDeps = compileLwjglDeps()
+  def unmanagedClasspath = Task:
+    Seq(lwjglAssembly().pathRef)
 
   def forkArgs =
     if scala.util.Properties.isMac
     then Seq("-XstartOnFirstThread")
     else Seq.empty
 
-  def mvnDeps = lwjglDeps
-  def runMvnDeps = runLwjglDeps
-  def compileMvnDeps = compileLwjglDeps
   def repositories = Seq(
     // "https://oss.sonatype.org/content/repositories/snapshots/"
     "https://central.sonatype.com/repository/maven-snapshots"
