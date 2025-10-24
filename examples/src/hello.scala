@@ -10,11 +10,10 @@ def helloBearlyb(): Unit =
   var running = true
   while running do
     Event.pollEvents().foreach:
-      case Event.Quit(_) | Event.Key.Down(key=Keycode.Q) =>
+      case Event.Quit(_) | Event.Key.Down(key = Keycode.Q) =>
         println("quitting")
         running = false
-      case other =>
-        println(other)
+      case other => println(other)
 
     renderer.drawColor = (255, 255, 0, 0)
     renderer.clear()

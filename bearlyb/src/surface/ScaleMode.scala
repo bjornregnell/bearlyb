@@ -8,7 +8,7 @@ enum ScaleMode:
   case Linear
 
   /** Nearest pixel sampling with improved filtering for pixelart */
-  case PixelArt
+  // case PixelArt
 
 end ScaleMode
 

@@ -15,6 +15,8 @@ import org.lwjgl.system.MemoryStack.stackPush
 import bearlyb.sdlErrorCheck
 import java.nio.ByteBuffer
 import bearlyb.video.imghelper
+import bearlyb.pixels.PixelFormat
+import bearlyb.surface.ScaleMode
 
 class Texture private[bearlyb] (private[bearlyb] val internal: SDL_Texture):
 
@@ -30,6 +32,15 @@ class Texture private[bearlyb] (private[bearlyb] val internal: SDL_Texture):
     */
   def renderer: Renderer =
     new Renderer(SDL_GetRendererFromTexture(internal).sdlCreationCheck())
+
+  def scaleMode: ScaleMode = Using(stackPush()): stack =>
+    val mode = stack.mallocInt(1)
+    SDL_GetTextureScaleMode(internal, mode).sdlErrorCheck()
+    ScaleMode.fromOrdinal(mode.get(0))
+  .get
+
+  def scaleMode_=(mode: ScaleMode): Unit =
+    SDL_SetTextureScaleMode(internal, mode.ordinal).sdlErrorCheck()
 
   def lock(rect: Rect[Int] | Null = null): Texture.Writer =
     val (pixels, pitch, w, h) = Using(stackPush()): stack =>
@@ -54,6 +65,17 @@ end Texture
 
 object Texture:
 
+  def apply(
+      renderer: Renderer,
+      format: PixelFormat,
+      access: TextureAccess,
+      w: Int,
+      h: Int
+    ): Texture = new Texture(
+    SDL_CreateTexture(renderer.internal, format.internal, access.internal, w, h)
+      .sdlCreationCheck()
+  )
+
   def loadImage(file: String, renderer: Renderer): Option[Texture] = imghelper
     .loadTexture(file, renderer.internal).map(new Texture(_))
 
@@ -66,6 +88,10 @@ object Texture:
     private lazy val internalFormat = tex.internalFormat
 
     def update(pos: Point[Int], color: RawColor): Unit =
+      if !(pos.x < w && pos.y < h && pos.x >= 0 && pos.y >= 0) then
+        throw IndexOutOfBoundsException(
+          s"The coordinate ${pos.toString} must be within 0..$w and 0..$h"
+        )
       assert(pos.x < w && pos.y < h)
       val bpp = internalFormat.bits_per_pixel
       val Bpp = internalFormat.bytes_per_pixel
@@ -78,6 +104,8 @@ object Texture:
       .get
 
     end update
+
+    def update(x: Int, y: Int, color: RawColor): Unit = update((x, y), color)
 
   end Writer
 

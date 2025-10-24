@@ -16,6 +16,7 @@ import bearlyb.rect.Rect
 import bearlyb.surface.FlipMode
 import org.lwjgl.sdl.SDL_Rect
 import bearlyb.pixels.FColor
+import bearlyb.pixels.PixelFormat
 
 class Renderer private[render] (private[bearlyb] val internal: Long):
 
@@ -246,6 +247,8 @@ class Renderer private[render] (private[bearlyb] val internal: Long):
     SDL_RenderTexture(internal, tex.internal, srcrect, dstrect).sdlErrorCheck()
   .get
 
+  def renderTexture(tex: Texture): Unit = renderTexture[Float](tex)
+
   def renderTextureRotated[T: Numeric](
       tex: Texture,
       angle: Double,
@@ -318,6 +321,9 @@ class Renderer private[render] (private[bearlyb] val internal: Long):
     SDL_RenderTextureTiled(internal, tex.internal, srcrect, scale, dstrect)
       .sdlErrorCheck()
   .get
+
+  def createTexture(format: PixelFormat, access: TextureAccess, w: Int, h: Int)
+      : Texture = Texture(this, format, access, w, h)
 
 end Renderer
 

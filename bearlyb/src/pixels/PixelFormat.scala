@@ -1,6 +1,8 @@
 package bearlyb.pixels
 
 import org.lwjgl.sdl.SDLPixels.*
+import org.lwjgl.sdl.SDL_Palette
+
 opaque type PixelFormat = Int
 
 object PixelFormat:
@@ -208,11 +210,19 @@ object PixelFormat:
   val BGRX32: PixelFormat = SDL_PIXELFORMAT_BGRX32
   val XBGR32: PixelFormat = SDL_PIXELFORMAT_XBGR32
 
-  extension (p: PixelFormat) private[bearlyb] def internal: Int = p
+  extension (p: PixelFormat)
+    private[bearlyb] def internal: Int                               = p
+
+    def mapColor(c: Color, palette: Palette | Null = null): RawColor =
+      import bearlyb.vectors.Vec.given
+      val (r, g, b, a)             = c.toTuple.vmap(_.toByte)
+      val ipal: SDL_Palette | Null = palette match
+        case null         => null
+        case pal: Palette => pal.internal
+      RawColor(SDL_MapRGBA(SDL_GetPixelFormatDetails(p), ipal, r, g, b, a))
+
+  end extension
 
   private[bearlyb] def fromInternal(internal: Int): PixelFormat = internal
-
-  private[bearlyb] def unapply(format: PixelFormat): Some[Int] =
-    Some(format.internal)
 
 end PixelFormat
