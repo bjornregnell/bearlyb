@@ -23,6 +23,10 @@ The complicated modules will be used in less complicated ones to achieve a begin
 
 * Check latest version of bearlyb in Relases.
 
+### API Documentation
+
+* Read the docs here: [lego-eden.github.io][https://lego-eden.github.io/]
+
 ### Demo
 
 ```scala
