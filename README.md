@@ -42,7 +42,6 @@ def BearlybDemo(): Unit =
     .createWindowAndRenderer("hello bearlyb!", width, height)
 
   var running = true
-  val step = 2
   var x = width / 2
   var y = height / 2
   var count = 1
