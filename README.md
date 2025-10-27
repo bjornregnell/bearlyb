@@ -12,11 +12,14 @@ This library will inevitably have more complicated internals because of lwjgl, a
 
 ### Using directives and import
 
+* You need the latest stable version of [Scala](https://www.scala-lang.org/). You can probably install it using a package manager of your choice, but if you are unsure of where to start I recommend using [coursier](https://get-coursier.io/).
+
 ```scala
 //> using scala 3.7.3
 //> using dep io.github.lego-eden::bearlyb::0.1.2 
 ```
-Check latest version of bearlyb in Relases.
+
+* Check latest version of bearlyb in Relases.
 
 ### Demo
 
@@ -82,7 +85,10 @@ end BearlybDemo
 
 * You need the latest stable version of [Scala](https://www.scala-lang.org/). You can probably install it using a package manager of your choice, but if you are unsure of where to start I recommend using [coursier](https://get-coursier.io/).
 
-* Go ahead and fork / clone the project and build using:
+* You need [Mill](https://mill-build.org) to build this repo.
+
+* Clone the project and build it:
+ 
 ```bash
 git clone https://github.com/lego-eden/bearlyb.git
 cd bearlyb
