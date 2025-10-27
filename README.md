@@ -8,16 +8,85 @@ It is also very inspired by the amazing professor [Björn Regnell](https://githu
 
 This library will inevitably have more complicated internals because of lwjgl, and it's associated libraries for rendering, input, audio, and more. The goal is to separate the complex stuff from the easy stuff by simply putting it into different modules (folders). The complicated modules will be used in less complicated ones to achieve a beginner friendly codebase at the level of the library that has methods, types, and other stuff that bearlyb exposes to anyone who uses the library. The library will basically be commplicated when it needs to, but hide that complicated code in separate modules which will hopefully not need to change super-often. You should be able to add lots of functionality by simply modifying the API-level code.
 
-## So how do i get started?
-Well right now nothing really exists hehe.
+## Getting started
 
-But if you want to help you need to install the latest stable version of [Scala](https://www.scala-lang.org/). You can probably install it using a package manager of your choice, but if you are unsure of where to start I recommend using [coursier](https://get-coursier.io/).
+### Using directives and import
 
-Alright! Once that is done you can go ahead and try cloning the project and running an example.
+```scala
+//> using scala 3.7.3
+//> using dep io.github.lego-eden::bearlyb::0.1.2 
+```
+Check latest version of bearlyb in Relases.
+
+### Demo
+
+```scala
+//> using scala 3.7.3
+//> using dep io.github.lego-eden::bearlyb::0.1.2 
+
+import bearlyb.*
+
+@main
+def BearlybDemo(): Unit =
+  bearlyb.init(Init.Video)
+
+  val (width, height, moveDelta, randomDelta) = (800, 600, 10, 2)
+  val (pink, purple) = (242, 128, 161, 0) -> (153, 102, 204, 0)
+
+  val (window, renderer) = bearlyb
+    .createWindowAndRenderer("hello bearlyb!", width, height)
+
+  var running = true
+  val step = 2
+  var x = width / 2
+  var y = height / 2
+  var count = 1
+  val measureTimeEvery = 2000
+  println("HELLO bearlyb! Press Q to quit. Press Arrow Keys to move rectangle.")
+  var t0 = System.nanoTime()
+  while running do
+    for e <- Event.pollEvents() do e match
+      case Event.Quit(_) | Event.Key.Down(key = Keycode.Q) =>
+        println("quitting")
+        running = false
+      case Event.Key.Down(key = Keycode.Right) => x += moveDelta
+      case Event.Key.Down(key = Keycode.Left)  => x -= moveDelta
+      case Event.Key.Down(key = Keycode.Up)    => y -= moveDelta
+      case Event.Key.Down(key = Keycode.Down)  => y += moveDelta
+      case other => println(other)
+    end for
+    x += util.Random.nextInt(2 * randomDelta + 1) - randomDelta
+    y += util.Random.nextInt(2 * randomDelta + 1) - randomDelta
+    x = math.floorMod(x, width)
+    y = math.floorMod(y, height)
+    renderer.drawColor = pink
+    renderer.clear()
+    renderer.drawColor = purple
+    renderer.fillRect(Rect(x, y, width / 8, width / 8))
+    renderer.present()
+    if (count % measureTimeEvery) == 0 then 
+      val time = System.nanoTime() - t0
+      val fps = 1e9 / time
+      t0 = System.nanoTime()
+      println(s"Time between frames: ${time / 1e9} ns")
+      println(s"Frames per second  : ${(fps + 10).round / 10.0} fps")
+    end if
+    count += 1
+  end while
+  bearlyb.quit()
+end BearlybDemo
+```
+
+
+## How to build and contribute
+
+* You need the latest stable version of [Scala](https://www.scala-lang.org/). You can probably install it using a package manager of your choice, but if you are unsure of where to start I recommend using [coursier](https://get-coursier.io/).
+
+* Go ahead and fork / clone the project and build using:
 ```bash
 git clone https://github.com/lego-eden/bearlyb.git
 cd bearlyb
 ./mill bearlyb
 ```
 
-You should see a window pop up!
+* Contributions are welcome! First open and issue and we can discuss your contributions there.
