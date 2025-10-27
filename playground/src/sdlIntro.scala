@@ -50,7 +50,7 @@ def main(): Unit =
       while SDL_PollEvent(event) do
         event.`type` match
           case SDL_EVENT_QUIT | SDL_EVENT_KEY_DOWN => shouldRun = false
-          case _ => ()
+          case _                                   => ()
 
       SDL_SetRenderDrawColorFloat(
         renderer, 1.0, 0.0, 0.0, SDL_ALPHA_OPAQUE_FLOAT

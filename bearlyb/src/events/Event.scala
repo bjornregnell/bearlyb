@@ -226,17 +226,17 @@ object Event:
         )
 
       case SDL_EVENT_MOUSE_WHEEL => Mouse.Wheel(
-        internal.duration,
-        internal.wheel.windowID,
-        internal.wheel.which,
-        internal.wheel.x,
-        internal.wheel.y,
-        mouse.WheelDirection.fromOrdinal(internal.wheel.direction),
-        internal.wheel.mouse_x,
-        internal.wheel.mouse_y,
-        internal.wheel.integer_x,
-        internal.wheel.integer_y,
-      )
+          internal.duration,
+          internal.wheel.windowID,
+          internal.wheel.which,
+          internal.wheel.x,
+          internal.wheel.y,
+          mouse.WheelDirection.fromOrdinal(internal.wheel.direction),
+          internal.wheel.mouse_x,
+          internal.wheel.mouse_y,
+          internal.wheel.integer_x,
+          internal.wheel.integer_y
+        )
 
       case SDL_EVENT_MOUSE_ADDED => Mouse
           .Added(internal.duration, internal.mdevice.which)
@@ -736,17 +736,16 @@ object Event:
         yrel: Float)
 
     case Wheel(
-      timestamp: Duration,
-      windowID: WindowID,
-      which: MouseID,
-      scrolledX: Float,
-      scrolledY: Float,
-      direction: mouse.WheelDirection,
-      mouseX: Float,
-      mouseY: Float,
-      integerScrolledX: Int,
-      integerScrolledY: Int,
-    )
+        timestamp: Duration,
+        windowID: WindowID,
+        which: MouseID,
+        scrolledX: Float,
+        scrolledY: Float,
+        direction: mouse.WheelDirection,
+        mouseX: Float,
+        mouseY: Float,
+        integerScrolledX: Int,
+        integerScrolledY: Int)
 
     case Added(timestamp: Duration, which: MouseID)
     case Removed(timestamp: Duration, which: MouseID)

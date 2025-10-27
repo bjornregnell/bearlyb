@@ -211,7 +211,7 @@ object PixelFormat:
   val XBGR32: PixelFormat = SDL_PIXELFORMAT_XBGR32
 
   extension (p: PixelFormat)
-    private[bearlyb] def internal: Int                               = p
+    private[bearlyb] def internal: Int = p
 
     def mapColor(c: Color, palette: Palette | Null = null): RawColor =
       import bearlyb.vectors.Vec.given
