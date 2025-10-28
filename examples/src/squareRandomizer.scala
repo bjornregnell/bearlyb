@@ -47,6 +47,7 @@ def squareRandomizer(): Unit =
       val fps  = 1e9 / time
       println(s"Time between frames: ${time / 1e9} ns")
       println(s"Frames per second  : ${(fps + 10).round / 10.0} fps")
+    end if
     t0 = System.nanoTime()
     count += 1
   end while
